@@ -1,6 +1,10 @@
+using InboxWrap.Clients;
+using InboxWrap.Configuration;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<HashiCorpConfig>(builder.Configuration.GetSection("HashiCorp"));
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -9,6 +13,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
+
+builder.Services.AddSingleton<SecretsClient>();
 
 builder.Services.AddControllers();
 

@@ -1,5 +1,7 @@
 using InboxWrap.Clients;
 using InboxWrap.Configuration;
+using InboxWrap.Models.Reponses;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +17,17 @@ builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
 
 builder.Services.AddSingleton<SecretsClient>();
+
+builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+{
+    SecretsClient? secretsClient = serviceProvider.GetRequiredService<SecretsClient>();
+    Secret? connectionString = secretsClient
+        .GetSecret("ConnectionString")
+        .GetAwaiter()
+        .GetResult();
+
+    options.UseNpgsql(connectionString?.StaticVersion?.Value);
+});
 
 builder.Services.AddControllers();
 

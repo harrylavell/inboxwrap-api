@@ -9,7 +9,7 @@ namespace InboxWrap.Clients;
 
 public interface ISecretsManagerClient
 {
-    public Task<Secret?> GetSecretAsync(string name);
+    public Task<string?> GetSecretAsync(string name);
     
     public Task<IEnumerable<Secret>?> GetSecretsAsync();
 }
@@ -24,8 +24,8 @@ public class SecretsManagerClient : ISecretsManagerClient
     private readonly string _clientId;
     private readonly string _clientSecret;
 
-    private const string TOKEN_URL = "https://auth.idp.hashicorp.com/oauth2/token";
-    private const string SECRETS_URL = "https://api.cloud.hashicorp.com/secrets/2023-11-28/organizations/4b42715d-23fc-49f4-a8c7-1f50cb403dd5/projects/33781194-6bad-4b92-93d5-868efeeb23fa/apps/api/secrets:open";
+    private const string TOKEN_URI = "https://auth.idp.hashicorp.com/oauth2/token";
+    private const string SECRETS_URI = "https://api.cloud.hashicorp.com/secrets/2023-11-28/organizations/4b42715d-23fc-49f4-a8c7-1f50cb403dd5/projects/33781194-6bad-4b92-93d5-868efeeb23fa/apps/api/secrets:open";
 
     public SecretsManagerClient(IOptions<HashiCorpConfig> config, HttpClient httpClient, IMemoryCache cache, ILogger<SecretsManagerClient> logger)
     {
@@ -48,7 +48,7 @@ public class SecretsManagerClient : ISecretsManagerClient
         _clientSecret = _config.ClientSecret;
     }
 
-    public async Task<Secret?> GetSecretAsync(string name)
+    public async Task<string?> GetSecretAsync(string name)
     {
         if (string.IsNullOrEmpty(name))
         {
@@ -58,7 +58,15 @@ public class SecretsManagerClient : ISecretsManagerClient
 
         IEnumerable<Secret>? secrets = await GetSecretsAsync();
         
-        return secrets?.Where(s => s.Name == name).FirstOrDefault();
+        Secret? secret = secrets?.Where(s => s.Name == name).FirstOrDefault();
+
+        if (secret == null)
+        {
+            _logger.LogError($"Failed to retrieve secret: {name}");
+            return null;
+        }
+
+        return secret.StaticVersion?.Value;
     }
 
     public async Task<IEnumerable<Secret>?> GetSecretsAsync()
@@ -81,7 +89,7 @@ public class SecretsManagerClient : ISecretsManagerClient
 
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, SECRETS_URL);
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, SECRETS_URI);
 
             using HttpResponseMessage response = await _httpClient.SendAsync(request);
 

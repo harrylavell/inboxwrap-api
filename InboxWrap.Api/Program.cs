@@ -1,11 +1,11 @@
 using InboxWrap.Clients;
 using InboxWrap.Configuration;
-using InboxWrap.Models.Reponses;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+string? connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
 builder.Services.Configure<HashiCorpConfig>(builder.Configuration.GetSection("HashiCorp"));
 
 // Add services to the container.
@@ -21,13 +21,16 @@ builder.Services.AddHttpClient<ISecretsManagerClient, SecretsManagerClient>();
 
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 {
-    ISecretsManagerClient? secretsClient = serviceProvider.GetRequiredService<ISecretsManagerClient>();
-    Secret? connectionString = secretsClient
-        .GetSecretAsync("ConnectionString")
-        .GetAwaiter()
-        .GetResult();
-
-    options.UseNpgsql(connectionString?.StaticVersion?.Value);
+    try
+    {
+        Console.WriteLine($"Connection string resolved: {connectionString}");
+        options.UseNpgsql(connectionString);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Failed to configure db context: {ex.Message}");
+        throw;
+    }
 });
 
 builder.Services.AddControllers();

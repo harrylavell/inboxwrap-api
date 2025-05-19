@@ -12,17 +12,18 @@ builder.Services.Configure<HashiCorpConfig>(builder.Configuration.GetSection("Ha
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
 
-builder.Services.AddSingleton<SecretsClient>();
+builder.Services.AddHttpClient<ISecretsManagerClient, SecretsManagerClient>();
 
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 {
-    SecretsClient? secretsClient = serviceProvider.GetRequiredService<SecretsClient>();
+    ISecretsManagerClient? secretsClient = serviceProvider.GetRequiredService<ISecretsManagerClient>();
     Secret? connectionString = secretsClient
-        .GetSecret("ConnectionString")
+        .GetSecretAsync("ConnectionString")
         .GetAwaiter()
         .GetResult();
 

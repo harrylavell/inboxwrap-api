@@ -131,7 +131,7 @@ public class SecretsManagerClient : ISecretsManagerClient
                 new KeyValuePair<string, string>("audience", "https://api.hashicorp.cloud"),
             ];
 
-            using HttpRequestMessage request = new(HttpMethod.Post, TOKEN_URL)
+            using HttpRequestMessage request = new(HttpMethod.Post, TOKEN_URI)
             {
                 Content = new FormUrlEncodedContent(content)
             };

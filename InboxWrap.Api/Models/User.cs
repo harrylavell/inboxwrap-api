@@ -12,20 +12,53 @@ public class User
     [Required, EmailAddress]
     public string Email { get; set; } = string.Empty;
 
-    public string? PasswordHash { get; set; }
+    public string PasswordHash { get; set; } = string.Empty;
 
     public UserPreferences Preferences { get; set; } = new();
+
+    public User() {  }
+
+    // TODO: Actually hash the password
+    public User(string email, string password)
+    {
+        Email = email;
+        PasswordHash = password;
+    }
 }
 
 public class UserPreferences
 {
-    public string TimeZoneId { get; set; } = TimeZoneInfo.Utc.Id;
+    private string _timeZoneId = "America/New_York";
+
+    public string TimeZoneId => _timeZoneId;
     
-    public TimeOnly DeliveryTime { get; set; } = new TimeOnly(8, 0);
+    public List<TimeOnly> DeliveryTimes { get; set; } = [ new TimeOnly(8, 0) ];
 
     public bool ShouldMarkEmailsAsRead { get; set; }
     
     public bool ShouldMarkImportantEmails { get; set; }
     
     public bool ShouldIgnoreMarketingEmails { get; set; }
+
+    public void SetTimeZone(string timeZone)
+    {
+        if (string.IsNullOrWhiteSpace(timeZone))
+        {
+            throw new ArgumentException("Time zone ID cannot be empty.");
+        }
+
+        try
+        {
+            TimeZoneInfo.FindSystemTimeZoneById(timeZone);
+            _timeZoneId = timeZone;
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            throw new ArgumentException($"Invalid time zone data: {timeZone}");
+        }
+        catch (InvalidTimeZoneException)
+        {
+            throw new ArgumentException($"Corrupt time zone data: {timeZone}");
+        }
+    }
 }

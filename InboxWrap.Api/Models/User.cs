@@ -32,7 +32,7 @@ public class UserPreferences
 
     public string TimeZoneId => _timeZoneId;
     
-    public List<TimeOnly> DeliveryTimes { get; set; } = [ new TimeOnly(8, 0) ];
+    public List<string> DeliveryTimes { get; set; } = [ "8:00" ];
 
     public bool ShouldMarkEmailsAsRead { get; set; }
     

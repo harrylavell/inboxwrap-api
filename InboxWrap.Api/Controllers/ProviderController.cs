@@ -15,9 +15,9 @@ public class ProviderController : ControllerBase
     private const string SCOPES = "Mail.Read Mail.ReadWrite offline_access openid profile email";
 
     private readonly ISecretsManagerClient _secretsManager;
-    private readonly ILogger<AuthController> _logger;
+    private readonly ILogger<ProviderController> _logger;
 
-    public ProviderController(ISecretsManagerClient secretsManager, ILogger<AuthController> logger)
+    public ProviderController(ISecretsManagerClient secretsManager, ILogger<ProviderController> logger)
     {
         _secretsManager = secretsManager;
         _logger = logger;

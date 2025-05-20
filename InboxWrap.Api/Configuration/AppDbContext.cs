@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 public class AppDbContext : DbContext
 {
-    public DbSet<User> Users { get; set; }
+    public required DbSet<User> Users { get; set; }
 
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -14,11 +14,9 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>()
-            .Property(u => u.Preferences)
-            .HasColumnType("jsonb")
-            .HasConversion(
-                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                v => JsonSerializer.Deserialize<UserPreferences>(v, (JsonSerializerOptions?)null)!);
+            .OwnsOne(u => u.Preferences, p => {
+                p.ToJson();
+            });
 
         base.OnModelCreating(modelBuilder);
     }

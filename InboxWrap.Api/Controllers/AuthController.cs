@@ -31,7 +31,7 @@ public class AuthController : ControllerBase
         await _users.AddAsync(user);
 
         if (await _users.SaveChangesAsync())
-            return Ok(_users.GetByEmail(request.EmailAddress));
+            return Ok(_users.GetByEmailAddress(request.EmailAddress));
 
         return StatusCode(StatusCodes.Status500InternalServerError);
     }

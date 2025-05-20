@@ -6,7 +6,7 @@ public interface IUserRepository
 {
     public Task<User?> GetByIdAsync(Guid id);
     
-    public User? GetByEmail(string email);
+    public User? GetByEmailAddress(string emailAddress);
 
     public IEnumerable<User> GetAll();
 
@@ -31,8 +31,8 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByIdAsync(Guid id) =>
         await _db.Users.FindAsync(id);
 
-    public User? GetByEmail(string email) =>
-        _db.Users.FirstOrDefault(u => u.Email == email);
+    public User? GetByEmailAddress(string emailAddress) =>
+        _db.Users.FirstOrDefault(u => u.EmailAddress == emailAddress);
 
     public IEnumerable<User> GetAll() =>
         _db.Users.ToList();

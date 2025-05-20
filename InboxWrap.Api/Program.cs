@@ -1,5 +1,6 @@
 using InboxWrap.Clients;
 using InboxWrap.Configuration;
+using InboxWrap.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -18,6 +19,8 @@ builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
 
 builder.Services.AddHttpClient<ISecretsManagerClient, SecretsManagerClient>();
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 {

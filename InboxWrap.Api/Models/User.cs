@@ -10,7 +10,7 @@ public class User
     public Guid CustomerId { get; set; } // E.g., Stripe Customer ID
 
     [Required, EmailAddress]
-    public string Email { get; set; } = string.Empty;
+    public string EmailAddress { get; set; } = string.Empty;
 
     public string PasswordHash { get; set; } = string.Empty;
 
@@ -19,9 +19,9 @@ public class User
     public User() {  }
 
     // TODO: Actually hash the password
-    public User(string email, string password)
+    public User(string emailAddress, string password)
     {
-        Email = email;
+        EmailAddress = emailAddress;
         PasswordHash = password;
     }
 }

@@ -10,7 +10,7 @@ public class User
     public Guid CustomerId { get; set; } // E.g., Stripe Customer ID
 
     [Required, EmailAddress]
-    public string EmailAddress { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
 
     public string PasswordHash { get; set; } = string.Empty;
 
@@ -19,16 +19,16 @@ public class User
     public User() {  }
 
     // TODO: Actually hash the password
-    public User(string emailAddress, string password)
+    public User(string email, string password)
     {
-        EmailAddress = emailAddress;
+        Email = email;
         PasswordHash = password;
     }
 }
 
 public class UserPreferences
 {
-    private string _timeZoneId = "America/New_York";
+    private string _timeZoneId = string.Empty;
 
     public string TimeZoneId => _timeZoneId;
     
@@ -39,6 +39,11 @@ public class UserPreferences
     public bool ShouldMarkImportantEmails { get; set; }
     
     public bool ShouldIgnoreMarketingEmails { get; set; }
+
+    public UserPreferences()
+    {
+        SetTimeZone("America/New_York");
+    }
 
     public void SetTimeZone(string timeZone)
     {

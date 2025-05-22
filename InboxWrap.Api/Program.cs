@@ -1,29 +1,38 @@
+using System.Text;
 using InboxWrap.Clients;
 using InboxWrap.Configuration;
 using InboxWrap.Repositories;
+using InboxWrap.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
 string? connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
-builder.Services.Configure<HashiCorpConfig>(builder.Configuration.GetSection("HashiCorp"));
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddMemoryCache();
+// Configuration
+builder.Services.Configure<PostgresConfig>(builder.Configuration.GetSection("Postgres"));
+builder.Services.Configure<HashiCorpConfig>(builder.Configuration.GetSection("HashiCorp"));
+builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("Jwt"));
+
+PostgresConfig postgresConfig = builder.Configuration.GetSection("Postgres").Get<PostgresConfig>()!;
+HashiCorpConfig hashiCorpConfig = builder.Configuration.GetSection("HashiCorp").Get<HashiCorpConfig>()!;
+JwtConfig jwtConfig = builder.Configuration.GetSection("Jwt").Get<JwtConfig>()!;
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
 
-builder.Services.AddHttpClient<ISecretsManagerClient, SecretsManagerClient>();
-
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 {
+    string connectionString =
+        $"Host={postgresConfig.Host};"+
+        $"Port={postgresConfig.Port};"+
+        $"Database={postgresConfig.Database};"+
+        $"Username={postgresConfig.Username};"+
+        $"Password={postgresConfig.Password}";
+
     try
     {
         Console.WriteLine($"Connection string resolved: {connectionString}");
@@ -36,6 +45,46 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
     }
 });
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "https://id.inboxwrap.com",
+            ValidAudience = "user",
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtConfig.Secret))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                // Read token from cookie instead of header
+                context.Token = context.Request.Cookies["access_token"];
+                return Task.CompletedTask;
+            }
+        };
+
+    });
+
+// Clients
+builder.Services.AddHttpClient<ISecretsManagerClient, SecretsManagerClient>();
+
+// Repostories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+// Services
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+// Other
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -51,9 +100,12 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
+app.UseAuthentication();
+
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers()
+    .RequireAuthorization();
 
 app.UseSerilogRequestLogging();
 

@@ -5,10 +5,10 @@ namespace InboxWrap.Models.Requests;
 public class LoginRequest
 {
     [Required(ErrorMessage = "Email address is required."), EmailAddress]
-    public string EmailAddress { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Password is required")]
-    [StringLength(32, ErrorMessage = "Must be between 8 and 32 characters", MinimumLength = 8)]
+    [StringLength(64, ErrorMessage = "Must be between 8 and 64 characters", MinimumLength = 8)]
     [RegularExpression(@"^(?=.*\d)(?=.*[^a-zA-Z\d]).*$", ErrorMessage = "Password must include at least one digit and one special character")]
     [DataType(DataType.Password)]
     public string Password { get; set; } = string.Empty;

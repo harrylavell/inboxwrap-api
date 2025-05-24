@@ -5,6 +5,7 @@ using InboxWrap.Repositories;
 using InboxWrap.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace InboxWrap.Controllers;
 
@@ -25,8 +26,10 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
-    [AllowAnonymous]
     [HttpPost("register")]
+    [AllowAnonymous]
+    [EnableRateLimiting("AuthPolicy")]
+    // TODO: Add rate limiting
     public async Task<IActionResult> Register(RegisterRequest request)
     {
         if (!ModelState.IsValid)
@@ -50,8 +53,9 @@ public class AuthController : ControllerBase
         return CreatedAtAction(nameof(Register), result.Value);
     }
 
-    [AllowAnonymous]
     [HttpPost("login")]
+    [AllowAnonymous]
+    [EnableRateLimiting("AuthPolicy")]
     public IActionResult Login(LoginRequest request)
     {
         if (!ModelState.IsValid)

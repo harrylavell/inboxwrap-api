@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using InboxWrap.Clients;
 using InboxWrap.Configuration;
 using InboxWrap.Repositories;
@@ -72,6 +73,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
     });
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("AuthPolicy", httpContext =>
+    {
+        var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        return RateLimitPartition.GetTokenBucketLimiter(ipAddress, _ => new TokenBucketRateLimiterOptions
+        {
+            TokenLimit = 5, // Max requests in period.
+            TokensPerPeriod = 5, // Replenish tokens each period.
+            ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+            AutoReplenishment = true,
+            QueueLimit = 0, // No queuing.
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        });
+    });
+
+    options.RejectionStatusCode = 429;
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync(
+            "{\"error\":\"Too many requests. Please try again later.\"}", token);
+    };
+});
+
 // Clients
 builder.Services.AddHttpClient<ISecretsManagerClient, SecretsManagerClient>();
 builder.Services.AddHttpClient<IMicrosoftAzureClient, MicrosoftAzureClient>();
@@ -103,9 +130,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseRouting();
-
+app.UseRateLimiter();
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers()

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace InboxWrap.Models;
+namespace InboxWrap.Models.Responses;
 
 public class MicrosoftTokenResponse
 {

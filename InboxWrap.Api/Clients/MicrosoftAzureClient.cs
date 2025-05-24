@@ -1,5 +1,5 @@
 using System.Text.Json;
-using InboxWrap.Models;
+using InboxWrap.Models.Responses;
 
 namespace InboxWrap.Clients;
 

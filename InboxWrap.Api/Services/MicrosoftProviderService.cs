@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using InboxWrap.Clients;
 using InboxWrap.Models;
-using InboxWrap.Models.Reponses;
+using InboxWrap.Models.Responses;
 using InboxWrap.Repositories;
 
 namespace InboxWrap.Services;

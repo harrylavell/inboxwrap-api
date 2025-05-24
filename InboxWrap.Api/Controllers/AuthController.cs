@@ -29,7 +29,6 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting("AuthPolicy")]
-    // TODO: Add rate limiting
     public async Task<IActionResult> Register(RegisterRequest request)
     {
         if (!ModelState.IsValid)

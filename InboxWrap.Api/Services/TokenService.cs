@@ -1,33 +1,34 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using InboxWrap.Clients;
+using InboxWrap.Configuration;
 using InboxWrap.Models;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace InboxWrap.Services;
 
 public interface ITokenService
 {
-    Task<string> GenerateToken(User user);
+    string GenerateToken(User user);
 }
 
 public class TokenService : ITokenService
 {
-    private readonly ISecretsManagerClient _secretsManager;
+    private readonly JwtConfig _config;
     private readonly ILogger<TokenService> _logger;
 
-    public TokenService(ISecretsManagerClient secretsManager, ILogger<TokenService> logger)
+    public TokenService(IOptions<JwtConfig> config, ILogger<TokenService> logger)
     {
-        _secretsManager = secretsManager;
+        _config = config.Value;
         _logger = logger;
     }
 
-    public async Task<string> GenerateToken(User user)
+    public string GenerateToken(User user)
     {
         try
         {
-            string jwtSecret = (await _secretsManager.GetSecretAsync("JwtSecretKey"))!;
+            string jwtSecret = _config.Secret;
 
             Claim[] claims = new[]
             {
@@ -54,4 +55,5 @@ public class TokenService : ITokenService
             return string.Empty;
         }
     }
+
 }

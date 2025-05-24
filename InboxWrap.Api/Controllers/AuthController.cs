@@ -52,14 +52,14 @@ public class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginRequest request)
+    public IActionResult Login(LoginRequest request)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
         
-        Result<LoginResult, AuthErrorCode> result = await _authService.Login(request.Email, request.Password);
+        Result<LoginResult, AuthErrorCode> result = _authService.Login(request.Email, request.Password);
 
         if (result.Failure)
         {

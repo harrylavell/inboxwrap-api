@@ -10,7 +10,7 @@ public interface IAuthService
 {
     Task<Result<UserDto, AuthErrorCode>> Register(string email, string password);
     
-    Task<Result<LoginResult, AuthErrorCode>> Login(string email, string password);
+    Result<LoginResult, AuthErrorCode> Login(string email, string password);
 }
 
 public class AuthService : IAuthService
@@ -56,7 +56,7 @@ public class AuthService : IAuthService
         return Result<UserDto, AuthErrorCode>.Ok(new UserDto(user));
     }
 
-    public async Task<Result<LoginResult, AuthErrorCode>> Login(string email, string password)
+    public Result<LoginResult, AuthErrorCode> Login(string email, string password)
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
@@ -79,7 +79,7 @@ public class AuthService : IAuthService
         }
 
         UserDto userDto = new UserDto(user);
-        string token = await _tokenService.GenerateToken(user);
+        string token = _tokenService.GenerateToken(user);
 
         LoginResult result = new(userDto, token);
 

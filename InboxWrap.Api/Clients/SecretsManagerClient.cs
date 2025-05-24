@@ -9,7 +9,7 @@ namespace InboxWrap.Clients;
 
 public interface ISecretsManagerClient
 {
-    public Task<string?> GetSecretAsync(string name);
+    public Task<string> GetSecretAsync(string name);
     
     public Task<IEnumerable<Secret>?> GetSecretsAsync();
 }
@@ -48,25 +48,19 @@ public class SecretsManagerClient : ISecretsManagerClient
         _clientSecret = _config.ClientSecret;
     }
 
-    public async Task<string?> GetSecretAsync(string name)
+    public async Task<string> GetSecretAsync(string name)
     {
         if (string.IsNullOrEmpty(name))
         {
             _logger.LogError("You must specify the secret to be retrieved.");
-            return null;
+            throw new ArgumentNullException(nameof(name), name);
         }
 
         IEnumerable<Secret>? secrets = await GetSecretsAsync();
         
-        Secret? secret = secrets?.Where(s => s.Name == name).FirstOrDefault();
+        Secret secret = secrets!.Where(s => s.Name == name).FirstOrDefault()!;
 
-        if (secret == null)
-        {
-            _logger.LogError($"Failed to retrieve secret: {name}");
-            return null;
-        }
-
-        return secret.StaticVersion?.Value;
+        return secret.StaticVersion?.Value!;
     }
 
     public async Task<IEnumerable<Secret>?> GetSecretsAsync()

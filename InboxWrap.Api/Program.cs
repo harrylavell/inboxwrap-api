@@ -74,13 +74,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 // Clients
 builder.Services.AddHttpClient<ISecretsManagerClient, SecretsManagerClient>();
+builder.Services.AddHttpClient<IMicrosoftAzureClient, MicrosoftAzureClient>();
 
 // Repostories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IConnectedAccountRepository, ConnectedAccountRepository>();
 
 // Services
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProviderService, ProviderService>();
 
 // Other
 builder.Services.AddEndpointsApiExplorer();

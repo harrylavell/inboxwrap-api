@@ -1,6 +1,7 @@
-using System.Text.Json;
-using InboxWrap.Clients;
-using InboxWrap.Models.Reponses;
+using System.Security.Claims;
+using InboxWrap.Models;
+using InboxWrap.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InboxWrap.Controllers;
@@ -9,45 +10,36 @@ namespace InboxWrap.Controllers;
 [Route("v1/[controller]")]
 public class ProviderController : ControllerBase
 {
-    private const string AUTHORIZE_URI = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
-    private const string TOKEN_URI = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-    private const string SCOPES_URI = "https://graph.microsoft.com/";
-    private const string SCOPES = "Mail.Read Mail.ReadWrite offline_access openid profile email";
-
-    private readonly ISecretsManagerClient _secretsManager;
+    private readonly IProviderService _providerService;
     private readonly ILogger<ProviderController> _logger;
 
-    public ProviderController(ISecretsManagerClient secretsManager, ILogger<ProviderController> logger)
+    public ProviderController(IProviderService providerService, ILogger<ProviderController> logger)
     {
-        _secretsManager = secretsManager;
+        _providerService = providerService;
         _logger = logger;
     }
 
-    [HttpGet("login")]
-    public async Task<IActionResult> Login()
+    [HttpGet("azure/authorize")]
+    public async Task<IActionResult> AzureAuthorizeApplication()
     {
         try
         {
-            string authUrl = string.Empty;
+            string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            string? clientId = await _secretsManager.GetSecretAsync("AzureAdClientId");
-            string? redirectUri = await _secretsManager.GetSecretAsync("AzureAdRedirectUri");
-
-            if (clientId == null || redirectUri == null)
+            if (userId == null)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                return Unauthorized("Invalid token or user not found.");
             }
 
-            authUrl = AUTHORIZE_URI +
-                $"?client_id={Uri.EscapeDataString(clientId)}" +
-                $"&response_type=code" +
-                $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
-                $"&response_mode=query" +
-                $"&scope={Uri.EscapeDataString(SCOPES_URI+SCOPES)}" +
-                $"&state={Guid.NewGuid().ToString()}";
+            Result<string> result = await _providerService.GenerateAzureConsentUrl(userId);
 
-            return Ok(authUrl);
-            //return Redirect(authUrl);
+            if (result.Failure)
+            {
+                return StatusCode(500, result.Error);
+            }
+
+            return Ok(result.Value);
+            //return Redirect(result.Value);
         }
         catch (Exception ex)
         {
@@ -56,8 +48,9 @@ public class ProviderController : ControllerBase
         }
     }
 
-    [HttpGet("callback")]
-    public async Task<IActionResult> Callback(string code, string state)
+    [AllowAnonymous]
+    [HttpGet("azure/callback")]
+    public async Task<IActionResult> AzureCallback([FromQuery] string code, [FromQuery] string state)
     {
         try
         {
@@ -66,32 +59,14 @@ public class ProviderController : ControllerBase
                 return BadRequest("Authorization code is missing.");
             }
 
-            string? clientId = await _secretsManager.GetSecretAsync("AzureAdClientId");
-            string? clientSecret = await _secretsManager.GetSecretAsync("AzureAdClientSecret");
-            string? redirectUri = await _secretsManager.GetSecretAsync("AzureAdRedirectUri");
+            Result result = await _providerService.SetupConnectedAccount(code, state);
 
-            if (clientId == null || redirectUri == null || clientSecret == null)
+            if (result.Failure)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                return StatusCode(500, result.Error);
             }
 
-            Dictionary<string, string> tokenRequestParameters = new()
-            {
-                { "client_id", clientId },
-                { "scope", SCOPES_URI+SCOPES },
-                { "code", code },
-                { "redirect_uri", redirectUri },
-                { "grant_type", "authorization_code" },
-                { "client_secret", clientSecret },
-            };
-
-            using HttpClient httpClient = new();
-            HttpResponseMessage response = await httpClient.PostAsync(TOKEN_URI, new FormUrlEncodedContent(tokenRequestParameters));
-
-            string? responseContent = await response.Content.ReadAsStringAsync();
-            TokenResponse? tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
-
-            return Ok(tokenResponse);
+            return Ok();
         }
         catch (Exception ex)
         {

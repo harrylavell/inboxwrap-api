@@ -1,11 +1,15 @@
+using InboxWrap.Services;
+
 namespace InboxWrap.Workers;
 
 public class EmailSummaryWorker : BackgroundService
 {
+    private readonly IEmailSummaryService _emailSummaryService;
     private readonly ILogger<EmailSummaryWorker> _logger;
 
-    public EmailSummaryWorker(ILogger<EmailSummaryWorker> logger)
+    public EmailSummaryWorker(IEmailSummaryService emailSummaryService, ILogger<EmailSummaryWorker> logger)
     {
+        _emailSummaryService = emailSummaryService;
         _logger = logger;
     }
 
@@ -18,6 +22,7 @@ public class EmailSummaryWorker : BackgroundService
         {
             try
             {
+                //await _emailSummaryService.Run();
                 Console.WriteLine($"EmailSummaryWorker: {count}");
                 count++;
             }

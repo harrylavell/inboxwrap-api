@@ -29,7 +29,7 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting("AuthPolicy")]
-    public async Task<IActionResult> Register(RegisterRequest request)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -55,7 +55,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting("AuthPolicy")]
-    public IActionResult Login(LoginRequest request)
+    public IActionResult Login([FromBody] LoginRequest request)
     {
         if (!ModelState.IsValid)
         {

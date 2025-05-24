@@ -10,17 +10,17 @@ namespace InboxWrap.Controllers;
 [Route("v1/[controller]")]
 public class ProviderController : ControllerBase
 {
-    private readonly IProviderService _providerService;
+    private readonly IMicrosoftProviderService _microsoft;
     private readonly ILogger<ProviderController> _logger;
 
-    public ProviderController(IProviderService providerService, ILogger<ProviderController> logger)
+    public ProviderController(IMicrosoftProviderService microsoft, ILogger<ProviderController> logger)
     {
-        _providerService = providerService;
+        _microsoft = microsoft;
         _logger = logger;
     }
 
-    [HttpGet("azure/authorize")]
-    public async Task<IActionResult> AzureAuthorizeApplication()
+    [HttpGet("microsoft/authorize")]
+    public async Task<IActionResult> MicrosoftAuthorize()
     {
         try
         {
@@ -31,7 +31,7 @@ public class ProviderController : ControllerBase
                 return Unauthorized("Invalid token or user not found.");
             }
 
-            Result<string> result = await _providerService.GenerateAzureConsentUrl(userId);
+            Result<string> result = await _microsoft.GenerateAzureConsentUrl(userId);
 
             if (result.Failure)
             {
@@ -49,8 +49,8 @@ public class ProviderController : ControllerBase
     }
 
     [AllowAnonymous]
-    [HttpGet("azure/callback")]
-    public async Task<IActionResult> AzureCallback([FromQuery] string code, [FromQuery] string state)
+    [HttpGet("microsoft/callback")]
+    public async Task<IActionResult> MicrosoftCallback([FromQuery] string code, [FromQuery] string state)
     {
         try
         {
@@ -59,7 +59,7 @@ public class ProviderController : ControllerBase
                 return BadRequest("Authorization code is missing.");
             }
 
-            Result result = await _providerService.SetupConnectedAccount(code, state);
+            Result result = await _microsoft.SetupConnectedAccount(code, state);
 
             if (result.Failure)
             {

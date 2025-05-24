@@ -6,14 +6,14 @@ using InboxWrap.Repositories;
 
 namespace InboxWrap.Services;
 
-public interface IProviderService
+public interface IMicrosoftProviderService
 {
     Task<Result<string>> GenerateAzureConsentUrl(string userId);
     
     Task<Result> SetupConnectedAccount(string code, string state);
 }
 
-public class ProviderService : IProviderService
+public class MicrosoftProviderService : IMicrosoftProviderService
 {
     private const string AZURE_AUTHORIZE_URI = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
     private const string AZURE_SCOPES_URI = "https://graph.microsoft.com/";
@@ -22,11 +22,11 @@ public class ProviderService : IProviderService
     private readonly IUserRepository _users;
     private readonly IConnectedAccountRepository _connectedAccounts;
     private readonly ISecretsManagerClient _secretsManager;
-    private readonly ILogger<ProviderService> _logger;
+    private readonly ILogger<MicrosoftProviderService> _logger;
 
-    public ProviderService(IMicrosoftAzureClient azureClient, IUserRepository users,
+    public MicrosoftProviderService(IMicrosoftAzureClient azureClient, IUserRepository users,
             IConnectedAccountRepository connectedAccounts, ISecretsManagerClient secretsManager,
-            ILogger<ProviderService> logger)
+            ILogger<MicrosoftProviderService> logger)
     {
         _azureClient = azureClient;
         _users = users;
@@ -63,17 +63,6 @@ public class ProviderService : IProviderService
             return Result.Fail("Code and state are required.");
         }
 
-        string clientId = await _secretsManager.GetSecretAsync("AzureAdClientId");
-        string clientSecret = await _secretsManager.GetSecretAsync("AzureAdClientSecret");
-        string redirectUri = await _secretsManager.GetSecretAsync("AzureAdRedirectUri");
-
-        if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret)
-                || string.IsNullOrWhiteSpace(redirectUri))
-        {
-            _logger.LogError("Missing Azure secret configuration.");
-            return Result.Fail("Configuration error occurred.");
-        }
-
         // Extract user ID from state
         string[] parts = state.Split('&');
         if (parts.Length != 2 || !Guid.TryParse(parts[0], out Guid userId))
@@ -82,22 +71,13 @@ public class ProviderService : IProviderService
             return Result.Fail("Invalid state information.");
         }
 
-        Dictionary<string, string> tokenParameters = new()
-        {
-            { "client_id", clientId },
-            { "scope", AZURE_SCOPES_URI + "Mail.Read Mail.ReadWrite offline_access openid profile email" },
-            { "code", code },
-            { "redirect_uri", redirectUri },
-            { "grant_type", "authorization_code" },
-            { "client_secret", clientSecret },
-        };
+        MicrosoftTokenResponse? tokenData = await _azureClient.GetToken(code);
 
         // Retrieve the authorization token from Microsoft
-        TokenResponse? token = await _azureClient.GetAuthorizationToken(tokenParameters);
-        if (token?.IdToken == null || string.IsNullOrWhiteSpace(token.AccessToken)
-                || string.IsNullOrWhiteSpace(token.RefreshToken))
+        if (tokenData?.IdToken == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
+                || string.IsNullOrWhiteSpace(tokenData.RefreshToken))
         {
-            _logger.LogError("Failed to retrieve authorization token: {TokenParameters}", tokenParameters);
+            _logger.LogError("Failed to retrieve authorization token.");
             return Result.Fail("Unable to connect to your Microsoft account at this time.");
         }
 
@@ -105,7 +85,7 @@ public class ProviderService : IProviderService
         IdTokenInfo idTokenInfo;
         try
         {
-            idTokenInfo = ExtractIdTokenInfo(token.IdToken);
+            idTokenInfo = ExtractIdTokenInfo(tokenData.IdToken);
         }
         catch (Exception ex)
         {
@@ -127,9 +107,9 @@ public class ProviderService : IProviderService
             Provider = Providers.Microsoft.ToString(),
             Name = idTokenInfo.Name,
             Email = idTokenInfo.Email,
-            AccessToken = token.AccessToken!, // TODO: Encrypt value before DB insert
-            RefreshToken = token.RefreshToken!, // TODO: Encrypt value before DB insert
-            AccessTokenExpiresAt = DateTime.UtcNow.AddSeconds(token.ExpiresIn),
+            AccessToken = tokenData.AccessToken!, // TODO: Encrypt value before DB insert
+            RefreshToken = tokenData.RefreshToken!, // TODO: Encrypt value before DB insert
+            AccessTokenExpiresAt = DateTime.UtcNow.AddSeconds(tokenData.ExpiresIn),
         };
 
         await _connectedAccounts.AddAsync(connectedAccount);

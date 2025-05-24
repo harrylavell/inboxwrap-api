@@ -99,6 +99,12 @@ public class MicrosoftProviderService : IMicrosoftProviderService
             return Result.Fail("Associated user not found.");
         }
 
+        // Check if this account has already been connected
+        if (_connectedAccounts.ExistsByProviderUserId(idTokenInfo.Sub))
+        {
+            return Result.Fail("Microsoft account has already been connected.");
+        }
+
         ConnectedAccount connectedAccount = new()
         {
             UserId = user.Id,

@@ -4,17 +4,21 @@ namespace InboxWrap.Repositories;
 
 public interface IConnectedAccountRepository
 {
-    public Task<ConnectedAccount?> GetByIdAsync(Guid id);
-    
-    public IEnumerable<ConnectedAccount> GetAll();
+    Task<ConnectedAccount?> GetByIdAsync(Guid id);
 
-    public Task AddAsync(ConnectedAccount connectedAccount);
+    ConnectedAccount? GetByProviderUserId(string providerUserId);
+    
+    IEnumerable<ConnectedAccount> GetAll();
 
-    public void Update(ConnectedAccount connectedAccount);
+    Task AddAsync(ConnectedAccount connectedAccount);
+
+    void Update(ConnectedAccount connectedAccount);
     
-    public void Delete(ConnectedAccount connectedAccount);
+    void Delete(ConnectedAccount connectedAccount);
+
+    bool ExistsByProviderUserId(string providerUserId);
     
-    public Task<bool> SaveChangesAsync();
+    Task<bool> SaveChangesAsync();
 }
 
 public class ConnectedAccountRepository : IConnectedAccountRepository
@@ -29,6 +33,9 @@ public class ConnectedAccountRepository : IConnectedAccountRepository
     public async Task<ConnectedAccount?> GetByIdAsync(Guid id) =>
         await _db.ConnectedAccounts.FindAsync(id);
 
+    public ConnectedAccount? GetByProviderUserId(string providerUserId) =>
+        _db.ConnectedAccounts.FirstOrDefault(c => c.ProviderUserId == providerUserId);
+
     public IEnumerable<ConnectedAccount> GetAll() =>
         _db.ConnectedAccounts.ToList();
 
@@ -40,6 +47,9 @@ public class ConnectedAccountRepository : IConnectedAccountRepository
 
     public void Delete(ConnectedAccount connectedAccount) =>
         _db.ConnectedAccounts.Remove(connectedAccount);
+
+    public bool ExistsByProviderUserId(string providerUserId) =>
+        _db.ConnectedAccounts.Any(c => c.ProviderUserId == providerUserId);
 
     public async Task<bool> SaveChangesAsync() =>
         await _db.SaveChangesAsync() > 0;

@@ -5,6 +5,7 @@ using InboxWrap.Clients;
 using InboxWrap.Configuration;
 using InboxWrap.Repositories;
 using InboxWrap.Services;
+using InboxWrap.Workers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -123,6 +124,9 @@ builder.Services.AddScoped<IConnectedAccountRepository, ConnectedAccountReposito
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMicrosoftProviderService, MicrosoftProviderService>();
+
+// Workers
+builder.Services.AddHostedService<EmailSummaryWorker>();
 
 // Other
 builder.Services.AddEndpointsApiExplorer();

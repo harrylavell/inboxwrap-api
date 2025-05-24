@@ -4,12 +4,12 @@ namespace InboxWrap.Workers;
 
 public class EmailSummaryWorker : BackgroundService
 {
-    private readonly IEmailSummaryService _emailSummaryService;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<EmailSummaryWorker> _logger;
 
-    public EmailSummaryWorker(IEmailSummaryService emailSummaryService, ILogger<EmailSummaryWorker> logger)
+    public EmailSummaryWorker(IServiceProvider serviceProvider, ILogger<EmailSummaryWorker> logger)
     {
-        _emailSummaryService = emailSummaryService;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -17,12 +17,16 @@ public class EmailSummaryWorker : BackgroundService
     {
         _logger.LogInformation("EmailSummaryWorker is starting.");
 
+        using IServiceScope scope = _serviceProvider.CreateScope();
+        var emailSummaryService = scope.ServiceProvider.GetRequiredService<IEmailSummaryService>();
+
         int count = 0;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                //await _emailSummaryService.Run();
+                await emailSummaryService.Run();
+
                 Console.WriteLine($"EmailSummaryWorker: {count}");
                 count++;
             }

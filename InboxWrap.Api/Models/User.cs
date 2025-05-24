@@ -17,6 +17,10 @@ public class User : BaseEntity
 
     public UserPreferences Preferences { get; set; } = new();
 
+    public List<ConnectedAccount> ConnectedAccounts { get; set; } = [];
+
+    public DateTime? NextDeliveryTimeUtc { get; set; }
+
     public User() { }
 }
 

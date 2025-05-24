@@ -25,6 +25,12 @@ public class AppDbContext : DbContext
             });
 
         modelBuilder.Entity<ConnectedAccount>()
+            .HasOne(c => c.User)
+            .WithMany(u => u.ConnectedAccounts)
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ConnectedAccount>()
             .HasIndex(c => c.ProviderUserId)
             .IsUnique();
 

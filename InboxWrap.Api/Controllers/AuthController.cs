@@ -1,5 +1,6 @@
 using InboxWrap.Models;
 using InboxWrap.Models.Requests;
+using InboxWrap.Module.Errors;
 using InboxWrap.Repositories;
 using InboxWrap.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -11,12 +12,14 @@ namespace InboxWrap.Controllers;
 [Route("v1/[controller]")]
 public class AuthController : ControllerBase
 {
+    private readonly IAuthService _authService;
     private readonly ITokenService _tokenService;
     private readonly IUserRepository _users;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(ITokenService tokenService, IUserRepository users, ILogger<AuthController> logger)
+    public AuthController(IAuthService authService, ITokenService tokenService, IUserRepository users, ILogger<AuthController> logger)
     {
+        _authService = authService;
         _tokenService = tokenService;
         _users = users;
         _logger = logger;
@@ -31,14 +34,20 @@ public class AuthController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        User user = new(request.Email, request.Password);
+        Result<UserDto, AuthErrorCode> result = await _authService.Register(request.Email, request.Password);
 
-        await _users.AddAsync(user);
+        if (result.Failure)
+        {
+            return result.Error switch
+            {
+                AuthErrorCode.MissingEmailOrPassword => BadRequest(new { code = result.Error.ToString(), message = result.Error.GetMessage() }),
+                AuthErrorCode.EmailInUse => Conflict(new { code = result.Error.ToString(), message = result.Error.GetMessage() }),
+                AuthErrorCode.SaveFailed => StatusCode(500, new { code = result.Error.ToString(), message = result.Error.GetMessage() }),
+                _ => StatusCode(500, new { code = result.Error.ToString(), message = result.Error.GetMessage() })
+            };
+        }
 
-        if (await _users.SaveChangesAsync())
-            return Ok(_users.GetByEmail(request.Email));
-
-        return StatusCode(StatusCodes.Status500InternalServerError);
+        return CreatedAtAction(nameof(Register), result.Value);
     }
 
     [AllowAnonymous]
@@ -49,33 +58,34 @@ public class AuthController : ControllerBase
         {
             return BadRequest(ModelState);
         }
+        
+        Result<LoginResult, AuthErrorCode> result = await _authService.Login(request.Email, request.Password);
 
-        // TODO: User validation
-
-        User? user = _users.GetByEmail(request.Email);
-
-        if (user is not null)
+        if (result.Failure)
         {
-            string? token = await _tokenService.Generate(user);
-
-            if (!string.IsNullOrEmpty(token))
+            return result.Error switch
             {
-                Response.Cookies.Append("access_token", token, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true, // Only over HTTPS
-                    SameSite = SameSiteMode.Strict, // or Lax
-                    Expires = DateTimeOffset.UtcNow.AddHours(1)
-                });
-
-                return Ok(new { user.Id, user.Email, user.Preferences });
-            }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
+                AuthErrorCode.MissingEmailOrPassword => BadRequest(new { code = result.Error.ToString(), message = result.Error.GetMessage() }),
+                AuthErrorCode.UserNotFound => NotFound(new { code = result.Error.ToString(), message = result.Error.GetMessage() }),
+                AuthErrorCode.InvalidCredentials => Unauthorized(new { code = result.Error.ToString(), message = result.Error.GetMessage() }),
+                _ => StatusCode(500, new { code = result.Error.ToString(), message = result.Error.GetMessage() })
+            };
         }
 
-        return NotFound();
+        if (result.Value?.Token == null)
+        {
+            _logger.LogError("An unknown error occurred during login for token check: {Email}", request.Email);
+            return StatusCode(500, "An unknown error occurred");
+        }
+
+        Response.Cookies.Append("access_token", result.Value.Token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true, // Only over HTTPS
+            SameSite = SameSiteMode.Strict, // or Lax
+            Expires = DateTimeOffset.UtcNow.AddHours(1)
+        });
+
+        return Ok(result.Value.User);
     }
 }

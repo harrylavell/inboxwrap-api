@@ -15,6 +15,8 @@ public interface IUserRepository
     public void Update(User user);
     
     public void Delete(User user);
+    
+    public bool ExistsByEmail(string email);
 
     public Task<bool> SaveChangesAsync();
 }
@@ -45,6 +47,9 @@ public class UserRepository : IUserRepository
 
     public void Delete(User user) =>
         _db.Users.Remove(user);
+
+    public bool ExistsByEmail(string email) =>
+        _db.Users.Any(u => u.Email == email);
 
     public async Task<bool> SaveChangesAsync() =>
         await _db.SaveChangesAsync() > 0;

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace InboxWrap.Models;
 
-public class User
+public class User : BaseEntity
 {
     [Key]
     public Guid Id { get; set; }
@@ -12,18 +12,12 @@ public class User
     [Required, EmailAddress]
     public string Email { get; set; } = string.Empty;
 
-    public string PasswordHash { get; set; } = string.Empty;
+    [Required]
+    public string Password { get; set; } = string.Empty;
 
     public UserPreferences Preferences { get; set; } = new();
 
-    public User() {  }
-
-    // TODO: Actually hash the password
-    public User(string email, string password)
-    {
-        Email = email;
-        PasswordHash = password;
-    }
+    public User() { }
 }
 
 public class UserPreferences

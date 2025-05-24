@@ -80,6 +80,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Services
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Other
 builder.Services.AddEndpointsApiExplorer();

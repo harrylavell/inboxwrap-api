@@ -9,7 +9,7 @@ namespace InboxWrap.Services;
 
 public interface ITokenService
 {
-    Task<string?> Generate(User user);
+    Task<string> GenerateToken(User user);
 }
 
 public class TokenService : ITokenService
@@ -23,33 +23,35 @@ public class TokenService : ITokenService
         _logger = logger;
     }
 
-    public async Task<string?> Generate(User user)
+    public async Task<string> GenerateToken(User user)
     {
-        string? jwtSecret = await _secretsManager.GetSecretAsync("JwtSecretKey");
-
-        if (jwtSecret is null)
+        try
         {
-            _logger.LogError("Unable to generate JSON Web Token (JWT).");
-            return null;
+            string jwtSecret = (await _secretsManager.GetSecretAsync("JwtSecretKey"))!;
+
+            Claim[] claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email.ToString())
+            };
+
+            SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(jwtSecret));
+            SigningCredentials credentials = new(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: "https://id.inboxwrap.com",
+                audience: "user",
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(1),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
-        Claim[] claims = new[]
+        catch (Exception ex)
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email.ToString())
-        };
-
-        SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(jwtSecret));
-        SigningCredentials credentials = new(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: "https://id.inboxwrap.com",
-            audience: "user",
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+            _logger.LogError("Token generation failed for user with email {Email}: {Message}", user.Email, ex.Message);
+            return string.Empty;
+        }
     }
 }

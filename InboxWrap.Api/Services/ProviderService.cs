@@ -24,7 +24,9 @@ public class ProviderService : IProviderService
     private readonly ISecretsManagerClient _secretsManager;
     private readonly ILogger<ProviderService> _logger;
 
-    public ProviderService(IMicrosoftAzureClient azureClient, IUserRepository users, IConnectedAccountRepository connectedAccounts, ISecretsManagerClient secretsManager, ILogger<ProviderService> logger)
+    public ProviderService(IMicrosoftAzureClient azureClient, IUserRepository users,
+            IConnectedAccountRepository connectedAccounts, ISecretsManagerClient secretsManager,
+            ILogger<ProviderService> logger)
     {
         _azureClient = azureClient;
         _users = users;
@@ -35,8 +37,10 @@ public class ProviderService : IProviderService
 
     public async Task<Result<string>> GenerateAzureConsentUrl(string userId)
     {
-        string scopes = "Mail.Read Mail.ReadWrite offline_access openid profile email";
-        string state = $"{userId}&{Guid.NewGuid().ToString()}";
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Result<string>.Fail("User ID is required.");
+        }
 
         string clientId = await _secretsManager.GetSecretAsync("AzureAdClientId");
         string redirectUri = await _secretsManager.GetSecretAsync("AzureAdRedirectUri");
@@ -46,14 +50,19 @@ public class ProviderService : IProviderService
             $"&response_type=code" +
             $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
             $"&response_mode=query" +
-            $"&scope={Uri.EscapeDataString(AZURE_SCOPES_URI+scopes)}" +
-            $"&state={Uri.EscapeDataString(state)}";
+            $"&scope={Uri.EscapeDataString(AZURE_SCOPES_URI + "Mail.Read Mail.ReadWrite offline_access openid profile email")}" +
+            $"&state={Uri.EscapeDataString($"{userId}&{Guid.NewGuid().ToString()}")}";
 
         return Result<string>.Ok(authUrl);
     }
 
     public async Task<Result> SetupConnectedAccount(string code, string state)
     {
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state))
+        {
+            return Result.Fail("Code and state are required.");
+        }
+
         string clientId = await _secretsManager.GetSecretAsync("AzureAdClientId");
         string clientSecret = await _secretsManager.GetSecretAsync("AzureAdClientSecret");
         string redirectUri = await _secretsManager.GetSecretAsync("AzureAdRedirectUri");
@@ -88,7 +97,7 @@ public class ProviderService : IProviderService
         if (token?.IdToken == null || string.IsNullOrWhiteSpace(token.AccessToken)
                 || string.IsNullOrWhiteSpace(token.RefreshToken))
         {
-            _logger.LogWarning("Failed to retrieve authorization token.");
+            _logger.LogError("Failed to retrieve authorization token: {TokenParameters}", tokenParameters);
             return Result.Fail("Unable to connect to your Microsoft account at this time.");
         }
 
@@ -127,7 +136,7 @@ public class ProviderService : IProviderService
 
         if (!await _connectedAccounts.SaveChangesAsync())
         {
-            _logger.LogWarning("Failed to save connected account for user {UserId}", user.Id);
+            _logger.LogError("Failed to save connected account for user {UserId}", user.Id);
             return Result.Fail("Unable to save connected account.");
         }
 

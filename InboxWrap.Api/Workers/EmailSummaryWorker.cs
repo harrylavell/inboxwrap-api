@@ -25,7 +25,7 @@ public class EmailSummaryWorker : BackgroundService
         {
             try
             {
-                await emailSummaryService.Run();
+                //await emailSummaryService.Run();
 
                 Console.WriteLine($"EmailSummaryWorker: {count}");
                 count++;

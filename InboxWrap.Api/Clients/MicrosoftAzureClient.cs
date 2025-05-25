@@ -100,7 +100,7 @@ public class MicrosoftAzureClient : IMicrosoftAzureClient
 
         Dictionary<string, string> parameters = new()
         {
-            { "scope", "https://graph.microsoft.com/.default" },
+            { "scope", "https://graph.microsoft.com/Mail.Read Mail.ReadWrite offline_access openid profile email" },
             { "client_id", clientId },
             { "client_secret", clientSecret },
             { "grant_type", "refresh_token" },

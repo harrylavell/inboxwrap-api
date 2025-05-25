@@ -49,11 +49,11 @@ public class AppDbContext : DbContext
 
         foreach (var entry in entries)
         {
-            entry.Entity.UpdatedAt = DateTime.UtcNow;
+            entry.Entity.UpdatedAtUtc = DateTime.UtcNow;
 
             if (entry.State == EntityState.Added)
             {
-                entry.Entity.CreatedAt = DateTime.UtcNow;
+                entry.Entity.CreatedAtUtc = DateTime.UtcNow;
             }
         }
 

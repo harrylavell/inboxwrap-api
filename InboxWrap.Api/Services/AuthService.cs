@@ -1,3 +1,4 @@
+using InboxWrap.Helpers;
 using InboxWrap.Models;
 using InboxWrap.Module.Errors;
 using InboxWrap.Repositories;
@@ -44,6 +45,9 @@ public class AuthService : IAuthService
             Email = email,
             Password = BCrypt.Net.BCrypt.HashPassword(password),
         };
+
+        // Calculate next delivery time
+        user.NextDeliveryUtc = DeliveryTimeCalculator.CalculateNextDeliveryUtc(user.Preferences);
 
         await _users.AddAsync(user);
 

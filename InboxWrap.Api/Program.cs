@@ -125,6 +125,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMicrosoftProviderService, MicrosoftProviderService>();
 builder.Services.AddScoped<IEmailSummaryService, EmailSummaryService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
 
 // Workers
 builder.Services.AddHostedService<EmailSummaryWorker>();

@@ -1,4 +1,5 @@
 using InboxWrap.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace InboxWrap.Repositories;
 
@@ -39,10 +40,10 @@ public class UserRepository : IUserRepository
         _db.Users.FirstOrDefault(u => u.Email == email);
 
     public IEnumerable<User> GetAll() =>
-        _db.Users.ToList();
+        _db.Users.Include(u => u.ConnectedAccounts).ToList();
 
     public IEnumerable<User> GetDueForSummary(DateTime utcNow) =>
-        _db.Users.Where(u => u.NextDeliveryUtc <= utcNow);
+        _db.Users.Include(u => u.ConnectedAccounts).Where(u => u.NextDeliveryUtc <= utcNow);
 
     public async Task AddAsync(User user) =>
         await _db.Users.AddAsync(user);

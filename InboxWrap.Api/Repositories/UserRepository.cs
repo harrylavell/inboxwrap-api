@@ -4,21 +4,23 @@ namespace InboxWrap.Repositories;
 
 public interface IUserRepository
 {
-    public Task<User?> GetByIdAsync(Guid id);
+    Task<User?> GetByIdAsync(Guid id);
     
-    public User? GetByEmail(string email);
-
-    public IEnumerable<User> GetAll();
-
-    public Task AddAsync(User user);
-
-    public void Update(User user);
+    User? GetByEmail(string email);
     
-    public void Delete(User user);
+    IEnumerable<User> GetAll();
     
-    public bool ExistsByEmail(string email);
+    IEnumerable<User> GetDueForSummary(DateTime utcNow);
 
-    public Task<bool> SaveChangesAsync();
+    Task AddAsync(User user);
+
+    void Update(User user);
+    
+    void Delete(User user);
+    
+    bool ExistsByEmail(string email);
+
+    Task<bool> SaveChangesAsync();
 }
 
 public class UserRepository : IUserRepository
@@ -38,6 +40,9 @@ public class UserRepository : IUserRepository
 
     public IEnumerable<User> GetAll() =>
         _db.Users.ToList();
+
+    public IEnumerable<User> GetDueForSummary(DateTime utcNow) =>
+        _db.Users.Where(u => u.NextDeliveryUtc <= utcNow);
 
     public async Task AddAsync(User user) =>
         await _db.Users.AddAsync(user);

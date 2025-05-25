@@ -115,7 +115,7 @@ public class MicrosoftProviderService : IMicrosoftProviderService
             Email = idTokenInfo.Email,
             AccessToken = tokenData.AccessToken!, // TODO: Encrypt value before DB insert
             RefreshToken = tokenData.RefreshToken!, // TODO: Encrypt value before DB insert
-            AccessTokenExpiresAt = DateTime.UtcNow.AddSeconds(tokenData.ExpiresIn),
+            AccessTokenExpiryUtc = DateTime.UtcNow.AddSeconds(tokenData.ExpiresIn),
         };
 
         await _connectedAccounts.AddAsync(connectedAccount);

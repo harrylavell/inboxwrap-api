@@ -39,7 +39,7 @@ public class ConnectedAccount : BaseEntity
     public string RefreshToken { get; set; } = string.Empty;
 
     [Required]
-    public DateTime AccessTokenExpiresAt { get; set; }
+    public DateTime AccessTokenExpiryUtc { get; set; }
 
     public bool IsRevoked { get; set; } = false;
 

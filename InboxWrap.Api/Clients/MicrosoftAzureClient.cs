@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text.Json;
 using InboxWrap.Models.Responses;
 
@@ -8,6 +9,10 @@ public interface IMicrosoftAzureClient
     Task<MicrosoftTokenResponse?> GetToken(string authorizationCode);
 
     Task<MicrosoftTokenResponse?> RefreshToken(string refreshToken);
+
+    Task<MicrosoftMailboxSettingsResponse?> GetMailboxSettings(string accessToken);
+
+    Task<MicrosoftMailResponse?> GetUnreadMail(string accessToken, string receivedDateTime);
 }
 
 public class MicrosoftAzureClient : IMicrosoftAzureClient
@@ -45,7 +50,7 @@ public class MicrosoftAzureClient : IMicrosoftAzureClient
 
         Dictionary<string, string> parameters = new()
         {
-            { "scope", "https://graph.microsoft.com/Mail.Read Mail.ReadWrite offline_access openid profile email" },
+            { "scope", "https://graph.microsoft.com/Mail.Read Mail.ReadWrite MailboxSettings.Read offline_access openid profile email" },
             { "client_id", clientId },
             { "client_secret", clientSecret },
             { "redirect_uri", redirectUri },
@@ -100,7 +105,7 @@ public class MicrosoftAzureClient : IMicrosoftAzureClient
 
         Dictionary<string, string> parameters = new()
         {
-            { "scope", "https://graph.microsoft.com/Mail.Read Mail.ReadWrite offline_access openid profile email" },
+            { "scope", "https://graph.microsoft.com/Mail.Read Mail.ReadWrite MailboxSettings.Read offline_access openid profile email" },
             { "client_id", clientId },
             { "client_secret", clientSecret },
             { "grant_type", "refresh_token" },
@@ -132,6 +137,83 @@ public class MicrosoftAzureClient : IMicrosoftAzureClient
         catch (JsonException ex)
         {
             _logger.LogError(ex, "Failed to deserialize Microsoft token response.");
+            return null;
+        }
+    }
+
+    public async Task<MicrosoftMailboxSettingsResponse?> GetMailboxSettings(string accessToken)
+    {
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            throw new ArgumentException("access token is required.", nameof(accessToken));
+        }
+
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        string uri = "https://graph.microsoft.com/v1.0/me/mailboxSettings";
+
+        HttpResponseMessage response = await _httpClient.GetAsync(uri);
+        string json = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("Failed to retrieve Microsoft mailbox settings. Status: {Status}. Response: {Body}", response.StatusCode, json);
+            return null;
+        }
+
+        try
+        {
+            MicrosoftMailboxSettingsResponse? mailData = JsonSerializer.Deserialize<MicrosoftMailboxSettingsResponse>(json);
+
+            if (mailData == null)
+            {
+                _logger.LogError("Deserialization of mailbox settings response returned null.");
+            }
+
+            return mailData;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Failed to deserialize Microsoft mailbox settings response.");
+            return null;
+        }
+    }
+
+    public async Task<MicrosoftMailResponse?> GetUnreadMail(string accessToken, string receivedDateTime)
+    {
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            throw new ArgumentException("access token is required.", nameof(accessToken));
+        }
+
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        string uri = "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages";
+        uri += $"?$filter=isRead eq false and receivedDateTime ge {receivedDateTime}&top=250";
+
+        HttpResponseMessage response = await _httpClient.GetAsync(uri);
+        string json = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("Failed to retrieve Microsoft mail. Status: {Status}. Response: {Body}", response.StatusCode, json);
+            return null;
+        }
+
+        try
+        {
+            MicrosoftMailResponse? mailData = JsonSerializer.Deserialize<MicrosoftMailResponse>(json);
+
+            if (mailData == null)
+            {
+                _logger.LogError("Deserialization of mail response returned null.");
+            }
+
+            return mailData;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Failed to deserialize Microsoft mail response.");
             return null;
         }
     }

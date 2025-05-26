@@ -50,7 +50,7 @@ public class MicrosoftProviderService : IMicrosoftProviderService
             $"&response_type=code" +
             $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
             $"&response_mode=query" +
-            $"&scope={Uri.EscapeDataString(AZURE_SCOPES_URI + "Mail.Read Mail.ReadWrite offline_access openid profile email")}" +
+            $"&scope={Uri.EscapeDataString(AZURE_SCOPES_URI + "Mail.Read Mail.ReadWrite MailboxSettings.Read offline_access openid profile email")}" +
             $"&state={Uri.EscapeDataString($"{userId}&{Guid.NewGuid().ToString()}")}";
 
         return Result<string>.Ok(authUrl);

@@ -8,13 +8,13 @@ public class MicrosoftMailResponse
     public string? Context { get; set; }
 
     [JsonPropertyName("value")]
-    public List<Message> Messages { get; set; } = [];
+    public List<MicrosoftMessage> Messages { get; set; } = [];
 
     [JsonPropertyName("@odata.nextLink")]
     public string? NextLink { get; set; }
 }
 
-public class Message
+public class MicrosoftMessage
 {
     [JsonPropertyName("@odata.etag")]
     public string OdataEtag { get; set; } = string.Empty;

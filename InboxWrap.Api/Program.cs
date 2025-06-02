@@ -115,6 +115,7 @@ builder.Services.AddRateLimiter(options =>
 // Clients
 builder.Services.AddHttpClient<ISecretsManagerClient, SecretsManagerClient>();
 builder.Services.AddHttpClient<IMicrosoftAzureClient, MicrosoftAzureClient>();
+builder.Services.AddHttpClient<IGroqClient, GroqClient>();
 
 // Repostories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -125,10 +126,13 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMicrosoftProviderService, MicrosoftProviderService>();
 builder.Services.AddScoped<IEmailSummaryService, EmailSummaryService>();
+builder.Services.AddScoped<IEmailPollingService, EmailPollingService>();
+builder.Services.AddScoped<ISummaryDeliveryService, SummaryDeliveryService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 
 // Workers
-builder.Services.AddHostedService<EmailSummaryWorker>();
+builder.Services.AddHostedService<EmailPollingWorker>();
+builder.Services.AddHostedService<SummaryDeliveryWorker>();
 
 // Other
 builder.Services.AddEndpointsApiExplorer();

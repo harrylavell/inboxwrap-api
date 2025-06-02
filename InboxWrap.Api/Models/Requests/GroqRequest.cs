@@ -16,5 +16,14 @@ public class GroqRequest
 
     [JsonPropertyName("max_completion_tokens")]
     public int MaxCompletionTokens { get; set; }
+
+    [JsonPropertyName("response_format")]
+    public GroqFormat ResponseFormat { get; set; } = new();
+}
+
+public class GroqFormat
+{
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = string.Empty;
 }
 

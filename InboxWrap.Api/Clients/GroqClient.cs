@@ -20,6 +20,34 @@ public class GroqClient : IGroqClient
     private const string BASE_MODEL = "llama3-8b-8192";
     private const string CHAT_URI = "https://api.groq.com/openai/v1/chat/completions";
 
+    private const string SYSTEM_PROMPT =
+"""
+You are a highly efficient email summarization model for InboxWrap. You only respond with valid raw JSON. Do not include any explanation, comments, or formatting outside the JSON block.
+
+Summarize the email in 1–2 very short sentences. Include only essential information. Clearly state if an action is required, or write "None".
+
+You must return a complete, valid JSON object, exactly in this structure:
+
+{
+  "summary": "Very short summary, 1–2 sentences max.",
+  "action_required": "Brief action or 'None'",
+  "important": true|false
+}
+
+Importance Logic
+
+Set "important": true if any of the following apply:
+- The email involves financial activity (e.g. transactions, charges, bills, repayments).
+- There is a deadline within 3 days.
+- Urgent or time-sensitive action is needed.
+- It relates to security, login issues, account access, or legal matters.
+- The message suggests fraud, unauthorized activity, or verification is required.
+
+Otherwise, set "important": false.
+
+Always return valid JSON. Ensure all opening and closing braces and quotes are present. Do not include any text outside the JSON.
+""";
+
     public GroqClient(HttpClient httpClient, ISecretsManagerClient secretsManager, ILogger<GroqClient> logger)
     {
         _httpClient = httpClient;
@@ -49,17 +77,23 @@ public class GroqClient : IGroqClient
         {
             Model = BASE_MODEL,
             Messages = [ 
-                new GroqMessage() {
+                new GroqMessage()
+                {
                     Role = "system",
-                    Content = ""
+                    Content = SYSTEM_PROMPT
                 },
-                new GroqMessage() {
+                new GroqMessage()
+                {
                     Role = "user",
                     Content = emailContent
                 },
             ],
             Temperature = 0.2M,
-            MaxCompletionTokens = 512
+            MaxCompletionTokens = 512,
+            ResponseFormat = new GroqFormat()
+            {
+                Type = "json_object"
+            }
         };
 
         string jsonRequest = JsonSerializer.Serialize(request);

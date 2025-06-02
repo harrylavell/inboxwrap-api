@@ -1,3 +1,7 @@
+using System.Globalization;
+using System.Net;
+using System.Text.RegularExpressions;
+using HtmlAgilityPack;
 using InboxWrap.Clients;
 using InboxWrap.Models;
 using InboxWrap.Models.Responses;
@@ -7,6 +11,10 @@ namespace InboxWrap.Services;
 
 public interface IEmailSummaryService
 {
+    Task PollUsersForNewEmailsAsync();
+
+    Task SendScheduledSummariesAsync();
+    
     Task Run();
 }
 
@@ -15,15 +23,27 @@ public class EmailSummaryService : IEmailSummaryService
     private readonly IUserRepository _users;
     private readonly IConnectedAccountRepository _connectedAccounts;
     private readonly IMicrosoftAzureClient _microsoftClient;
+    private readonly IGroqClient _groqClient;
     private readonly ILogger<EmailSummaryService> _logger;
 
     public EmailSummaryService(IUserRepository users, IConnectedAccountRepository connectedAccounts,
-            IMicrosoftAzureClient microsoftClient, ILogger<EmailSummaryService> logger)
+            IMicrosoftAzureClient microsoftClient, IGroqClient groqClient, ILogger<EmailSummaryService> logger)
     {
         _users = users;
         _connectedAccounts = connectedAccounts;
         _microsoftClient = microsoftClient;
+        _groqClient = groqClient;
         _logger = logger;
+    }
+
+    public Task PollUsersForNewEmailsAsync()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SendScheduledSummariesAsync()
+    {
+        throw new NotImplementedException();
     }
 
     public async Task Run()
@@ -32,37 +52,76 @@ public class EmailSummaryService : IEmailSummaryService
         //IEnumerable<User> users = _users.GetDueForSummary(DateTime.UtcNow);
         IEnumerable<User> users = _users.GetAll();
 
-
         foreach (User user in users)
         {
-            Console.WriteLine(user.Email);
-
             foreach (ConnectedAccount connectedAccount in user.ConnectedAccounts)
             {
-                Console.WriteLine("Provider: " + connectedAccount.Provider);
-                Console.WriteLine("Provider User ID: " + connectedAccount.ProviderUserId);
-                Console.WriteLine("Access Token: " + connectedAccount.AccessToken);
-                Console.WriteLine("Refresh Token: " + connectedAccount.RefreshToken);
+                string? accessToken = (connectedAccount.AccessTokenExpiryUtc <= DateTime.UtcNow)
+                    ? accessToken = await UpdateAccessToken(user, connectedAccount)
+                    : connectedAccount.AccessToken; // TODO: Encrypt/decrypt
 
-                string? accessToken = null;
-
-                // Update connected account's access token if it's expired
-                if (connectedAccount.AccessTokenExpiryUtc <= DateTime.UtcNow)
+                if (string.IsNullOrWhiteSpace(accessToken))
                 {
-                    accessToken = await UpdateAccessToken(user, connectedAccount);
+                    // TODO: Improve error message
+                    _logger.LogError("Skipping connected account as we can't retrieve a valid access token.");
+                    continue;
+                }
 
-                    if (string.IsNullOrWhiteSpace(accessToken))
+
+                // Caluculate the date time 1 days ago in IOS 8601 format as required by Graph API
+                string receivedDateTime = 
+                    DateTime.UtcNow.AddDays(-1).ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+
+                MicrosoftMailResponse? mailResponse = await _microsoftClient.GetUnreadMail(accessToken, receivedDateTime);
+
+                if (mailResponse == null)
+                {
+                    Console.WriteLine("Issue");
+                    continue;
+                }
+
+                IEnumerable<MicrosoftMessage> mail = mailResponse.Messages;
+
+                foreach (MicrosoftMessage message in mail)
+                {
+                    string content = message.Body.Content;
+
+                    // TODO: Updater (remove html)
+                    if (message.Body.ContentType == "html")
                     {
-                        // TODO: Improve error message
-                        _logger.LogError("Skipping connected account as we can't retrieve a valid access token.");
-                        continue;
+                        HtmlDocument doc = new();
+                        doc.LoadHtml(message.Body.Content);
+                        content = WebUtility.HtmlDecode(doc.DocumentNode.InnerText);
+
+                        //Console.WriteLine(content);
+                        //Console.WriteLine();
                     }
+
+                    // TODO: Remove whitespace and newlines
+                    content = Regex.Replace(content, @"\s{2,}", " ");
+
+                    // TODO: Truncate (limit to 1000 characters)
+                    if (content.Length > 1000)
+                    {
+                        content = content.Substring(0, 1000);
+                    }
+
+                    //Console.WriteLine(content);
+                    //
+                    // TODO: Check if email has already been read before sending
+
+                    GroqResponse? groq = await _groqClient.GenerateEmailSummary(content);
+
+                    if (groq != null)
+                    {
+                        Console.WriteLine(groq.ToString());
+                        Console.WriteLine(groq.Choices.First().Message.Content);
+                    }
+
+                    //return;
                 }
-                else
-                {
-                    // Use stored access token if it's still valid
-                    accessToken = connectedAccount.AccessToken; // TODO: Encrypt/decrypt
-                }
+
+                // TODO: Convert message to a Mail object for use with all Providers
 
                 // get all emails in past X hours between delivery times
 

@@ -1,3 +1,4 @@
+using InboxWrap.Services;
 
 public class SummaryDeliveryWorker : BackgroundService
 {
@@ -22,7 +23,7 @@ public class SummaryDeliveryWorker : BackgroundService
             try
             {
                 _logger.LogInformation("Running summary delivery task...");
-                await deliveryService.SendDueSummariesAsync(stoppingToken);
+                //await deliveryService.SendDueSummariesAsync(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -31,7 +32,7 @@ public class SummaryDeliveryWorker : BackgroundService
 
             try
             {
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); // Check every minute
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); // Check every minute
             }
             catch (TaskCanceledException)
             {

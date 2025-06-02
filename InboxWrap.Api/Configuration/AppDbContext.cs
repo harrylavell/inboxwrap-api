@@ -7,6 +7,8 @@ public class AppDbContext : DbContext
     public required DbSet<User> Users { get; set; }
     
     public required DbSet<ConnectedAccount> ConnectedAccounts { get; set; }
+    
+    public required DbSet<Summary> Summaries { get; set; }
 
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -36,6 +38,28 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<ConnectedAccount>()
             .HasIndex(c => c.UserId);
+
+        modelBuilder.Entity<Summary>()
+            .OwnsOne(u => u.Content, p => {
+                p.ToJson();
+            });
+        
+        modelBuilder.Entity<Summary>()
+            .OwnsOne(u => u.GenerationMetadata, p => {
+                p.ToJson();
+            });
+
+        modelBuilder.Entity<Summary>()
+            .HasOne(s => s.User)
+            .WithMany(u => u.Summaries)
+            .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Summary>()
+            .HasIndex(s => s.UserId);
+        
+        modelBuilder.Entity<Summary>()
+            .HasIndex(s => s.MessageId);
 
         base.OnModelCreating(modelBuilder);
     }

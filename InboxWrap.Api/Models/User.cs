@@ -18,6 +18,8 @@ public class User : BaseEntity
     public UserPreferences Preferences { get; set; } = new();
 
     public List<ConnectedAccount> ConnectedAccounts { get; set; } = [];
+    
+    public List<Summary> Summaries { get; set; } = [];
 
     public DateTime? NextDeliveryUtc { get; set; } = null;
 

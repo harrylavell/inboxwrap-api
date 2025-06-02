@@ -120,12 +120,12 @@ builder.Services.AddHttpClient<IGroqClient, GroqClient>();
 // Repostories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IConnectedAccountRepository, ConnectedAccountRepository>();
+builder.Services.AddScoped<ISummaryRepository, SummaryRepository>();
 
 // Services
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMicrosoftProviderService, MicrosoftProviderService>();
-builder.Services.AddScoped<IEmailSummaryService, EmailSummaryService>();
 builder.Services.AddScoped<IEmailPollingService, EmailPollingService>();
 builder.Services.AddScoped<ISummaryDeliveryService, SummaryDeliveryService>();
 builder.Services.AddScoped<IAccountService, AccountService>();

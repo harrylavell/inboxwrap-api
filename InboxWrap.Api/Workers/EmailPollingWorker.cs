@@ -25,7 +25,7 @@ public class EmailPollingWorker : BackgroundService
             try
             {
                 _logger.LogInformation("Running email polling task...");
-                await pollingService.PollUsersForNewEmailsAsync();
+                //await pollingService.PollUsersForNewEmailsAsync(stoppingToken);
             }
             catch (Exception ex)
             {

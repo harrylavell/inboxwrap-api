@@ -27,6 +27,11 @@ public class GroqResponse
 
     [JsonPropertyName("x_groq")]
     public XGroq XGroq { get; set; } = new();
+
+    public override string ToString()
+    {
+        return $"Request ID: {XGroq?.Id}, Input Tokens: {Usage?.PromptTokens}, Output Tokens: {Usage?.CompletionTokens}, Total Time: {Usage?.TotalTime}";
+    }
 }
 
 public class GroqChoice

@@ -102,40 +102,57 @@ public class EmailPollingService : IEmailPollingService
                         // Generate summary
                         GroqResponse? groq = await _groqClient.GenerateEmailSummary(content);
 
-                        if (groq != null)
+                        if (groq == null)
                         {
-                            string? responseContent = groq.Choices.FirstOrDefault()?.Message.Content;
-                            SummaryContent? cont = JsonSerializer.Deserialize<SummaryContent>(responseContent!);
-
-                            // TODO: Save summary to database
-                            Summary summary = new()
-                            {
-                                Id = Guid.NewGuid(),
-                                UserId = user.Id,
-                                User = user,
-                                MessageId = messageId,
-                                Source = "Microsoft",
-                                Content = cont!,
-                                GenerationMetadata = new SummaryGenerationMetadata()
-                                {
-                                    Provider = "Groq",
-                                    RequestId = groq.XGroq.Id,
-                                    InputTokens = groq.Usage.PromptTokens,
-                                    OutputTokens = groq.Usage.CompletionTokens,
-                                    TimeTaken = groq.Usage.TotalTime
-                                }
-                            };
-
-                            await _summaries.AddAsync(summary);
-                            await _summaries.SaveChangesAsync();
-                        }
-                        else
-                        {
-                            _logger.LogWarning(""); // TODO: Add good warning message
+                            _logger.LogError("Groq response is null or empty.");
                             continue;
                         }
-                    }
 
+                        string? responseContent = groq.Choices.FirstOrDefault()?.Message.Content;
+
+                        if (string.IsNullOrWhiteSpace(responseContent))
+                        {
+                            _logger.LogError("Groq response content is null or empty.");
+                            continue;
+                        }
+
+                        SummaryContent? summaryContent;
+                        try
+                        {
+                            summaryContent = JsonSerializer.Deserialize<SummaryContent>(responseContent!);
+                            if (summaryContent == null)
+                            {        
+                                _logger.LogError($"Deserialization of summary content returned null. Raw content: {responseContent}");
+                                continue;
+                            }
+                        }
+                        catch (JsonException ex)
+                        {
+                            _logger.LogError(ex, $"Deserialization of summary content returned null. Raw content: {responseContent}");
+                            continue;
+                        }
+
+                        Summary summary = new()
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = user.Id,
+                            User = user,
+                            MessageId = messageId,
+                            Source = "Microsoft",
+                            Content = summaryContent,
+                            GenerationMetadata = new SummaryGenerationMetadata()
+                            {
+                                Provider = "Groq",
+                                RequestId = groq.XGroq.Id,
+                                InputTokens = groq.Usage.PromptTokens,
+                                OutputTokens = groq.Usage.CompletionTokens,
+                                TimeTaken = groq.Usage.TotalTime
+                            }
+                        };
+
+                        await _summaries.AddAsync(summary);
+                        await _summaries.SaveChangesAsync();
+                    }
                 }
 
                 if (connectedAccount.Provider == "Google")

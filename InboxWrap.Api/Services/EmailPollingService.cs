@@ -100,7 +100,7 @@ public class EmailPollingService : IEmailPollingService
                         }
 
                         // Generate summary
-                        GroqResponse? groq = await _groqClient.GenerateEmailSummary(content);
+                        GroqResponse? groq = await _groqClient.GenerateEmailSummary(user, content);
 
                         if (groq == null)
                         {

@@ -5,11 +5,14 @@ namespace InboxWrap.Models.Requests;
 
 public class GroqRequest
 {
-    [JsonPropertyName("messages")]
-    public List<GroqMessage> Messages { get; set; } = [];
+    [JsonPropertyName("user")]
+    public string User { get; set; } = string.Empty;
 
     [JsonPropertyName("model")]
     public string Model { get; set; } = string.Empty;
+
+    [JsonPropertyName("messages")]
+    public List<GroqMessage> Messages { get; set; } = [];
 
     [JsonPropertyName("temperature")]
     public decimal Temperature { get; set; }

@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using InboxWrap.Models;
 using InboxWrap.Models.Requests;
 using InboxWrap.Models.Responses;
 
@@ -8,7 +9,7 @@ namespace InboxWrap.Clients;
 
 public interface IGroqClient
 {
-    Task<GroqResponse?> GenerateEmailSummary(string emailContent);
+    Task<GroqResponse?> GenerateEmailSummary(User user, string emailContent);
 }
 
 public class GroqClient : IGroqClient
@@ -17,7 +18,7 @@ public class GroqClient : IGroqClient
     private readonly ISecretsManagerClient _secretsManager;
     private readonly ILogger<GroqClient> _logger;
 
-    private const string BASE_MODEL = "llama3-8b-8192";
+    private const string MODEL = "llama-3.1-8b-instant";
     private const string CHAT_URI = "https://api.groq.com/openai/v1/chat/completions";
 
     private const string SYSTEM_PROMPT =
@@ -55,7 +56,7 @@ Always return valid JSON. Ensure all opening and closing braces and quotes are p
         _logger = logger;
     }
 
-    public async Task<GroqResponse?> GenerateEmailSummary(string emailContent)
+    public async Task<GroqResponse?> GenerateEmailSummary(User user, string emailContent)
     {
         if (string.IsNullOrWhiteSpace(emailContent))
         {
@@ -75,7 +76,8 @@ Always return valid JSON. Ensure all opening and closing braces and quotes are p
         // Prepare request content
         GroqRequest request = new()
         {
-            Model = BASE_MODEL,
+            User = user.Id.ToString(),
+            Model = MODEL,
             Messages = [ 
                 new GroqMessage()
                 {

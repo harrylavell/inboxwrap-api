@@ -116,6 +116,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddHttpClient<ISecretsManagerClient, SecretsManagerClient>();
 builder.Services.AddHttpClient<IMicrosoftAzureClient, MicrosoftAzureClient>();
 builder.Services.AddHttpClient<IGroqClient, GroqClient>();
+builder.Services.AddHttpClient<IPostmarkClient, PostmarkClient>();
 
 // Repostories
 builder.Services.AddScoped<IUserRepository, UserRepository>();

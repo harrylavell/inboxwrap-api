@@ -16,8 +16,6 @@ public interface ISummaryRepository
     
     void Delete(Summary summary);
 
-    bool ExistsAsync(Guid userId, string messageId);
-
     Task<bool> SaveChangesAsync();
 }
 
@@ -32,9 +30,6 @@ public class SummaryRepository : ISummaryRepository
 
     public async Task<Summary?> GetByIdAsync(Guid id) =>
         await _db.Summaries.FindAsync(id);
-
-    public Summary? GetByMessageIdAsync(string messageId) =>
-        _db.Summaries.FirstOrDefault(s => s.MessageId == messageId);
 
     public IEnumerable<Summary> GetAll() =>
         _db.Summaries.ToList();
@@ -51,9 +46,6 @@ public class SummaryRepository : ISummaryRepository
     public void Delete(Summary summary) =>
         _db.Summaries.Remove(summary);
     
-    public bool ExistsAsync(Guid userId, string messageId) =>
-        _db.Summaries.Any(s => s.UserId == userId && s.MessageId == messageId);
-
     public async Task<bool> SaveChangesAsync() =>
         await _db.SaveChangesAsync() > 0;
 }

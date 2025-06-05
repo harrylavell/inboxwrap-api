@@ -1,5 +1,6 @@
 using InboxWrap.Clients;
 using InboxWrap.Models;
+using InboxWrap.Models.Requests;
 using InboxWrap.Models.Responses;
 using InboxWrap.Repositories;
 
@@ -36,11 +37,31 @@ public class SummaryDeliveryService : ISummaryDeliveryService
 
         foreach (User user in users)
         {
+            // TODO: Summaries need a ConnectedAccountId foreign key
+            
             cancellationToken.ThrowIfCancellationRequested();
 
-            PostmarkResponse? response = await _postmarkClient.SendSummaryEmail();
+            List<SummaryContent> summaries = user.Summaries.Select(s => s.Content).ToList();
+
+            summaries = summaries.OrderByDescending(s => s.PriorityScore).ToList();
+            Console.WriteLine(summaries.Count());
+
+            List<SummaryContent> topPicks = summaries.Take(3).ToList();
+            List<SummaryContent> otherSummaries = summaries.Skip(3).ToList();
+
+            DailySummaryTemplateModel templateModel = new()
+            {
+                Subject = "test",
+                Date = DateTime.Now.ToString("MMMM d"),
+                IntroText = "This is an intro text",
+                TopPicks = topPicks,
+                OtherSummaries = otherSummaries
+            };
+
+            PostmarkResponse? response = await _postmarkClient.SendSummaryEmail(templateModel);
 
             Console.WriteLine(response?.MessageID.ToString());
+            Console.WriteLine(response?.Message);
         }
     }
 }

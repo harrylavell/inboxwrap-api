@@ -40,7 +40,7 @@ public class EmailPollingService : IEmailPollingService
     {
         DateTime pollStartUtc = DateTime.UtcNow;
         //DateTime receivedCutoffUtc = pollStartUtc.AddMinutes(-5);
-        DateTime receivedCutoffUtc = pollStartUtc.AddHours(-12);
+        DateTime receivedCutoffUtc = pollStartUtc.AddHours(-48);
 
         IEnumerable<User> users = _users.GetAll();
 
@@ -61,7 +61,7 @@ public class EmailPollingService : IEmailPollingService
                     continue;
                 }
 
-                if (connectedAccount.Provider == "Microsoft")
+                if (connectedAccount.Provider == Providers.Microsoft)
                 {
                     // Calculate the date time IOS 8601 format as required by Graph API
                     string receivedDateTime = receivedCutoffUtc.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
@@ -80,7 +80,9 @@ public class EmailPollingService : IEmailPollingService
                     foreach (MicrosoftMessage message in messages)
                     {
                         string messageId = message.Id;
+                        string subject = message.Subject;
                         string content = message.Body.Content;
+                        string link = message.WebLink;
 
                         // TODO: (UPDATER) Remove HTML
                         if (message.Body.ContentType == "html")
@@ -100,7 +102,7 @@ public class EmailPollingService : IEmailPollingService
                         }
 
                         // Generate summary
-                        GroqResponse? groq = await _groqClient.GenerateEmailSummary(user, content);
+                        GroqResponse? groq = await _groqClient.GenerateEmailSummary(user, subject, content);
 
                         if (groq == null)
                         {
@@ -137,9 +139,16 @@ public class EmailPollingService : IEmailPollingService
                             Id = Guid.NewGuid(),
                             UserId = user.Id,
                             User = user,
-                            MessageId = messageId,
-                            Source = "Microsoft",
+                            ConnectedAccountId = connectedAccount.Id,
+                            ConnectedAccount = connectedAccount,
+                            Source = Providers.Microsoft,
                             Content = summaryContent,
+                            Metadata = new SummaryMetadata()
+                            {
+                                Subject = subject,
+                                Link = link,
+                                ExternalMessageId = messageId,
+                            },
                             GenerationMetadata = new SummaryGenerationMetadata()
                             {
                                 Provider = "Groq",
@@ -147,6 +156,10 @@ public class EmailPollingService : IEmailPollingService
                                 InputTokens = groq.Usage.PromptTokens,
                                 OutputTokens = groq.Usage.CompletionTokens,
                                 TimeTaken = groq.Usage.TotalTime
+                            },
+                            DeliveryMetadata = new SummaryDeliveryMetadata()
+                            {
+                                Status = DeliveryStatuses.Pending
                             }
                         };
 
@@ -155,7 +168,7 @@ public class EmailPollingService : IEmailPollingService
                     }
                 }
 
-                if (connectedAccount.Provider == "Google")
+                if (connectedAccount.Provider == Providers.Google)
                 {
 
                 }

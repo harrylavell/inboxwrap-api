@@ -3,10 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace InboxWrap.Models;
 
-public enum Providers
+public static class Providers
 {
-    Microsoft,
-    Google
+    public const string Microsoft = "microsoft";
+    public const string Google = "google";
 }
 
 public class ConnectedAccount : BaseEntity
@@ -42,6 +42,8 @@ public class ConnectedAccount : BaseEntity
     public DateTime AccessTokenExpiryUtc { get; set; }
 
     public bool IsRevoked { get; set; } = false;
+
+    public List<Summary> Summaries { get; set; } = [];
 
     public ConnectedAccount() { }
 }

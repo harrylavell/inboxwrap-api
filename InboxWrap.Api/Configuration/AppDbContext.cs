@@ -43,9 +43,19 @@ public class AppDbContext : DbContext
             .OwnsOne(u => u.Content, p => {
                 p.ToJson();
             });
+
+        modelBuilder.Entity<Summary>()
+            .OwnsOne(u => u.Metadata, p => {
+                p.ToJson();
+            });
         
         modelBuilder.Entity<Summary>()
             .OwnsOne(u => u.GenerationMetadata, p => {
+                p.ToJson();
+            });
+
+        modelBuilder.Entity<Summary>()
+            .OwnsOne(u => u.DeliveryMetadata, p => {
                 p.ToJson();
             });
 
@@ -56,10 +66,19 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Summary>()
+            .HasOne(s => s.ConnectedAccount)
+            .WithMany(c => c.Summaries)
+            .HasForeignKey(s => s.ConnectedAccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Summary>()
             .HasIndex(s => s.UserId);
         
         modelBuilder.Entity<Summary>()
-            .HasIndex(s => s.MessageId);
+            .HasIndex(s => s.ConnectedAccountId);
+
+        modelBuilder.Entity<Summary>()
+            .HasIndex(s => s.DeliveryStatus);
 
         base.OnModelCreating(modelBuilder);
     }

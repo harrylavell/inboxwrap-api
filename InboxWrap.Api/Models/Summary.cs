@@ -16,32 +16,60 @@ public class Summary : BaseEntity
     public User User { get; set; } = null!;
 
     [Required]
-    public string MessageId { get; set; } = string.Empty;
-    
+    public Guid ConnectedAccountId { get; set; }
+
+    [ForeignKey("ConnectedAccountId")]
+    public ConnectedAccount ConnectedAccount { get; set; } = null!;
+
     [Required]
     public string Source { get; set; } = string.Empty;
     
-    public bool IsDelivered { get; set; }
+    public string DeliveryStatus { get; set; } = DeliveryStatuses.Pending;
 
     public DateTime? DeliveredAtUtc { get; set; }
 
     public SummaryContent Content { get; set; } = new();
     
+    public SummaryMetadata Metadata { get; set; } = new();
+    
     public SummaryGenerationMetadata GenerationMetadata { get; set; } = new();
+    
+    public SummaryDeliveryMetadata DeliveryMetadata { get; set; } = new();
 
     public Summary() { }
 }
 
 public class SummaryContent
 {
-    [JsonPropertyName("summary")]
-    public string Content { get; set; } = string.Empty;
-    
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
     [JsonPropertyName("action_required")]
     public string ActionRequired { get; set; } = string.Empty;
+
+    [JsonPropertyName("content")]
+    public string Content { get; set; } = string.Empty;
+    
+    [JsonPropertyName("category")]
+    public string Category { get; set; } = string.Empty;
     
     [JsonPropertyName("important")]
     public bool IsImportant { get; set; }
+
+    [JsonPropertyName("confidence_score")]
+    public decimal ConfidenceScore { get; set; }
+    
+    [JsonPropertyName("priority_score")]
+    public decimal PriorityScore { get; set; }
+}
+
+public class SummaryMetadata
+{
+    public string Link { get; set; } = string.Empty;
+
+    public string Subject { get; set; } = string.Empty;
+
+    public string ExternalMessageId { get; set; } = string.Empty;
 }
 
 public class SummaryGenerationMetadata
@@ -55,4 +83,28 @@ public class SummaryGenerationMetadata
     public int OutputTokens { get; set; }
     
     public double TimeTaken { get; set; }
+}
+
+public class SummaryDeliveryMetadata
+{
+    public string Provider { get; set; } = string.Empty;
+
+    public string Channel { get; set; } = "email";
+
+    public string MessageId { get; set; } = string.Empty;
+
+    public string Status { get; set; } = DeliveryStatuses.Pending;
+
+    public string ErrorMessage { get; set; } = string.Empty;
+
+    public DateTime? SentAtUtc { get; set; }
+
+    public int AttemptCount { get; set; } = 0;
+}
+
+public static class DeliveryStatuses
+{
+    public const string Pending = "pending";
+    public const string Delivered = "delivered";
+    public const string Failed = "failed";
 }

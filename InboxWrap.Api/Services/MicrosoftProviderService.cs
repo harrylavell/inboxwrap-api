@@ -110,7 +110,7 @@ public class MicrosoftProviderService : IMicrosoftProviderService
             UserId = user.Id,
             User = user,
             ProviderUserId = idTokenInfo.Sub,
-            Provider = Providers.Microsoft.ToString(),
+            Provider = Providers.Microsoft,
             Name = idTokenInfo.Name,
             Email = idTokenInfo.Email,
             AccessToken = tokenData.AccessToken!, // TODO: Encrypt value before DB insert

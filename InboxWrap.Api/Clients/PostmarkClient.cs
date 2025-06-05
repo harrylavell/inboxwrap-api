@@ -1,13 +1,15 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using InboxWrap.Models.Requests;
 using InboxWrap.Models.Responses;
+using Newtonsoft.Json;
 
 namespace InboxWrap.Clients;
 
 public interface IPostmarkClient
 {
-    Task<PostmarkResponse?> SendSummaryEmail();
+    Task<PostmarkResponse?> SendSummaryEmail(PostmarkTemplateModel templateModel);
 }
 
 public class PostmarkClient : IPostmarkClient
@@ -25,7 +27,7 @@ public class PostmarkClient : IPostmarkClient
         _logger = logger;
     }
 
-    public async Task<PostmarkResponse?> SendSummaryEmail()
+    public async Task<PostmarkResponse?> SendSummaryEmail(PostmarkTemplateModel templateModel)
     {
         string apiToken = await _secretsManager.GetSecretAsync("PostmarkApiToken");
 
@@ -41,15 +43,14 @@ public class PostmarkClient : IPostmarkClient
         PostmarkRequest request = new()
         {
             TemplateId = "40277619",
-            TemplateModel = new DailySummaryTemplateModel()
-            {
-
-            },
+            TemplateModel = templateModel,
             From = "testing@inboxwrap.com",
             To = "hallan@outlook.com.au",
         };
 
-        string jsonRequest = JsonSerializer.Serialize(request);
+        string jsonRequest = JsonConvert.SerializeObject(request, Formatting.Indented);
+        Console.WriteLine(jsonRequest);
+
         StringContent content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
         HttpResponseMessage response = await _httpClient.PostAsync(TEMPLATE_URI, content);
@@ -63,7 +64,7 @@ public class PostmarkClient : IPostmarkClient
 
         try
         {
-            PostmarkResponse? postmarkData = JsonSerializer.Deserialize<PostmarkResponse>(json);
+            PostmarkResponse? postmarkData = JsonConvert.DeserializeObject<PostmarkResponse>(json);
 
             if (postmarkData == null)
             {
@@ -72,7 +73,7 @@ public class PostmarkClient : IPostmarkClient
 
             return postmarkData;
         }
-        catch (JsonException ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to deserialize Postmark response.");
             return null;

@@ -40,10 +40,16 @@ public class UserRepository : IUserRepository
         _db.Users.FirstOrDefault(u => u.Email == email);
 
     public IEnumerable<User> GetAll() =>
-        _db.Users.Include(u => u.ConnectedAccounts).ToList();
+        _db.Users
+            .Include(u => u.ConnectedAccounts)
+            .Include(u => u.Summaries)
+            .ToList();
 
     public IEnumerable<User> GetDueForSummary(DateTime utcNow) =>
-        _db.Users.Include(u => u.ConnectedAccounts).Where(u => u.NextDeliveryUtc <= utcNow);
+        _db.Users
+            .Include(u => u.ConnectedAccounts)
+            .Include(u => u.Summaries)
+            .Where(u => u.NextDeliveryUtc <= utcNow);
 
     public async Task AddAsync(User user) =>
         await _db.Users.AddAsync(user);

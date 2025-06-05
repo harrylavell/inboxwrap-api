@@ -108,3 +108,8 @@ public static class DeliveryStatuses
     public const string Delivered = "delivered";
     public const string Failed = "failed";
 }
+
+public static class EmailProviders
+{
+    public const string Postmark = "postmark";
+}

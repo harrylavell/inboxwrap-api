@@ -15,15 +15,17 @@ public class SummaryDeliveryService : ISummaryDeliveryService
 {
     private readonly IUserRepository _users;
     private readonly IConnectedAccountRepository _connectedAccounts;
+    private readonly ISummaryRepository _summaries;
     private readonly IMicrosoftAzureClient _microsoftClient;
     private readonly IPostmarkClient _postmarkClient;
     private readonly ILogger<ISummaryDeliveryService> _logger;
 
-    public SummaryDeliveryService(IUserRepository users, IConnectedAccountRepository connectedAccounts,
+    public SummaryDeliveryService(IUserRepository users, IConnectedAccountRepository connectedAccounts, ISummaryRepository summaries,
             IMicrosoftAzureClient microsoftClient, IPostmarkClient postmarkClient, ILogger<ISummaryDeliveryService> logger)
     {
         _users = users;
         _connectedAccounts = connectedAccounts;
+        _summaries = summaries;
         _microsoftClient = microsoftClient;
         _postmarkClient = postmarkClient;
         _logger = logger;
@@ -60,8 +62,51 @@ public class SummaryDeliveryService : ISummaryDeliveryService
 
             PostmarkResponse? response = await _postmarkClient.SendSummaryEmail(templateModel);
 
+            Console.WriteLine(response?.To);
+            Console.WriteLine(response?.SubmittedAt);
+            Console.WriteLine(response?.ErrorCode);
             Console.WriteLine(response?.MessageID.ToString());
             Console.WriteLine(response?.Message);
+
+            if (response == null)
+            {
+                // TODO: Handle this better
+                return;
+            }
+
+            foreach (Summary summary in user.Summaries)
+            {
+                // Update the delivery metadata
+                summary.DeliveryMetadata = new SummaryDeliveryMetadata
+                {
+                    Provider = EmailProviders.Postmark,
+                    MessageId = response.MessageID,
+                    Status = (response.ErrorCode != 0)
+                        ? DeliveryStatuses.Failed
+                        : DeliveryStatuses.Delivered,
+                    ErrorMessage = (response.ErrorCode != 0)
+                        ? response.Message
+                        : string.Empty,
+                    SentAtUtc = response.SubmittedAt,
+                    AttemptCount = summary.DeliveryMetadata.AttemptCount += 1,
+                };
+                
+                // Summary was successfully delivered
+                if (summary.DeliveryMetadata.Status == DeliveryStatuses.Delivered)
+                {
+                    summary.DeliveryStatus = DeliveryStatuses.Delivered;
+                    summary.DeliveredAtUtc = response.SubmittedAt;
+                    //summary.Content = null;
+                }
+                else
+                {
+                    // TODO: Unhappy path, i.e., not delivered
+                }
+
+                _summaries.Update(summary);
+            }
+
+            await _summaries.SaveChangesAsync();
         }
     }
 }

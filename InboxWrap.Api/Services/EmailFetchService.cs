@@ -40,6 +40,13 @@ public class EmailFetchService : IEmailFetchService
         DateTime lastFetchedCutoffUtc = fetchStartUtc.AddDays(-5);
         IEnumerable<ConnectedAccount> dueForFetch = _connected.GetDueForFetch(lastFetchedCutoffUtc);
 
+        if (!dueForFetch.Any())
+        {
+            // Back off for a short time if there's nothing to do
+            await Task.Delay(TimeSpan.FromSeconds(5), ct);
+            return;
+        }
+
         foreach (ConnectedAccount account in dueForFetch)
         {
             ct.ThrowIfCancellationRequested();

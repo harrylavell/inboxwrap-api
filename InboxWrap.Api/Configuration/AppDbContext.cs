@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // User
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
             .IsUnique();
@@ -26,6 +27,7 @@ public class AppDbContext : DbContext
                 p.ToJson();
             });
 
+        // Connected Account
         modelBuilder.Entity<ConnectedAccount>()
             .HasOne(c => c.User)
             .WithMany(u => u.ConnectedAccounts)
@@ -39,6 +41,10 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ConnectedAccount>()
             .HasIndex(c => c.UserId);
 
+        modelBuilder.Entity<ConnectedAccount>()
+            .HasIndex(c => c.LastFetchedAtUtc);
+
+        // Summary
         modelBuilder.Entity<Summary>()
             .OwnsOne(u => u.Content, p => {
                 p.ToJson();

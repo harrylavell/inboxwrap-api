@@ -2,7 +2,6 @@ using InboxWrap.Services;
 
 namespace InboxWrap.Workers;
 
-// TODO: Fill this class out (constant)
 public class EmailFetchWorker : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
@@ -20,27 +19,20 @@ public class EmailFetchWorker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = _serviceProvider.CreateScope();
-            var fetchService = scope.ServiceProvider.GetRequiredService<IEmailFetchService>();
-
             try
             {
-                //await pollingService.PollUsersForNewEmailsAsync(stoppingToken);
+                using var scope = _serviceProvider.CreateScope();
+                var fetchService = scope.ServiceProvider.GetRequiredService<IEmailFetchService>();
+
+                await fetchService.FetchEmailsAsync(stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while fetching emails.");
+                _logger.LogError(ex, "Failed to emails.");
             }
 
-            try
-            {
-                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
-            }
-            catch (TaskCanceledException)
-            {
-                // Graceful shutdown
-                break;
-            }
+            // Minor delay as to not overwhelm the DB and services
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
         }
 
         _logger.LogInformation("EmailFetchWorker is stopping.");

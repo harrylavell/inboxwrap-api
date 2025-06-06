@@ -28,7 +28,7 @@ public class EmailFetchWorker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to emails.");
+                _logger.LogError(ex, "Failed to fetch emails.");
             }
 
             // Minor delay as to not overwhelm the DB and services

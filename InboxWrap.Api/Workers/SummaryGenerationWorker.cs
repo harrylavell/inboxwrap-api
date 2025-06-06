@@ -31,10 +31,6 @@ public class SummaryGenerationWorker : BackgroundService
 
                     await summaryService.SummarizeNextEmailAsync(stoppingToken);
                 }
-                catch (Exception ex)
-                {
-                    //_logger.LogError(ex, "Failed to summarize email.");
-                }
                 finally
                 {
                     _throttle.Release();

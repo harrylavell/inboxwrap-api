@@ -43,12 +43,14 @@ public class UserRepository : IUserRepository
         _db.Users
             .Include(u => u.ConnectedAccounts)
             .Include(u => u.Summaries)
+            .AsSplitQuery()
             .ToList();
 
     public IEnumerable<User> GetDueForSummary(DateTime utcNow) =>
         _db.Users
             .Include(u => u.ConnectedAccounts)
             .Include(u => u.Summaries)
+            .AsSplitQuery()
             .Where(u => u.NextDeliveryUtc <= utcNow);
 
     public async Task AddAsync(User user) =>

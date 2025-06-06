@@ -14,7 +14,9 @@ namespace InboxWrap.Services;
 
 public interface IEmailFetchService
 {
-    Task FetchEmailsAsync(CancellationToken cancellationToken);
+    Task FetchEmailsAsync(CancellationToken ct);
+
+    //Task RunAsync(CancellationToken ct);
 }
 
 public class EmailFetchService : IEmailFetchService
@@ -33,7 +35,7 @@ public class EmailFetchService : IEmailFetchService
         _logger = logger;
     }
 
-    public async Task FetchEmailsAsync(CancellationToken cancellationToken)
+    public async Task FetchEmailsAsync(CancellationToken ct)
     {
         DateTime fetchStartUtc = DateTime.UtcNow;
         //DateTime lastFetchedCutoffUtc = fetchStartUtc.AddMinutes(-5);
@@ -42,7 +44,7 @@ public class EmailFetchService : IEmailFetchService
 
         foreach (ConnectedAccount account in dueForFetch)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            ct.ThrowIfCancellationRequested();
 
             string? accessToken = (account.AccessTokenExpiryUtc <= DateTime.UtcNow)
                 ? accessToken = await UpdateAccessToken(account)
@@ -116,7 +118,6 @@ public class EmailFetchService : IEmailFetchService
             await UpdateLastFetchedAtAsync(account);
         }
     }
-
 
     private async Task<string?> UpdateAccessToken(ConnectedAccount account)
     {

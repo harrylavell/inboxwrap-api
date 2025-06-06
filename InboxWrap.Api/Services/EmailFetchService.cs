@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using InboxWrap.Clients;
+using InboxWrap.Constants;
 using InboxWrap.Infrastructure.Queues;
 using InboxWrap.Models;
 using InboxWrap.Models.Jobs;

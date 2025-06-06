@@ -3,12 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace InboxWrap.Models;
 
-public static class Providers
-{
-    public const string Microsoft = "microsoft";
-    public const string Google = "google";
-}
-
 public class ConnectedAccount : BaseEntity
 {
     [Key]

@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using InboxWrap.Constants;
 
 namespace InboxWrap.Models;
 
@@ -102,16 +103,4 @@ public class SummaryDeliveryMetadata
     public DateTime? SentAtUtc { get; set; }
 
     public int AttemptCount { get; set; } = 0;
-}
-
-public static class DeliveryStatuses
-{
-    public const string Pending = "pending";
-    public const string Delivered = "delivered";
-    public const string Failed = "failed";
-}
-
-public static class EmailProviders
-{
-    public const string Postmark = "postmark";
 }

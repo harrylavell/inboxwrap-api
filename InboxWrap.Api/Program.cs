@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using InboxWrap.Clients;
 using InboxWrap.Configuration;
+using InboxWrap.Infrastructure.Queues;
 using InboxWrap.Repositories;
 using InboxWrap.Services;
 using InboxWrap.Workers;
@@ -124,16 +125,18 @@ builder.Services.AddScoped<IConnectedAccountRepository, ConnectedAccountReposito
 builder.Services.AddScoped<ISummaryRepository, SummaryRepository>();
 
 // Services
+builder.Services.AddSingleton<ISummaryQueue, InMemorySummaryQueue>();
+
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMicrosoftProviderService, MicrosoftProviderService>();
-builder.Services.AddScoped<IEmailPollingService, EmailPollingService>();
-builder.Services.AddScoped<ISummaryDeliveryService, SummaryDeliveryService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 
+builder.Services.AddScoped<IEmailFetchService, EmailFetchService>();
+builder.Services.AddScoped<ISummaryGenerationService, SummaryGenerationService>();
+builder.Services.AddScoped<ISummaryEmailDispatcher, SummaryEmailDispatcher>();
+
 // Workers
-builder.Services.AddHostedService<EmailPollingWorker>();
-builder.Services.AddHostedService<SummaryDeliveryWorker>();
 
 // Other
 builder.Services.AddEndpointsApiExplorer();

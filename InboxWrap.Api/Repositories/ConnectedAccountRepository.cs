@@ -9,6 +9,8 @@ public interface IConnectedAccountRepository
     ConnectedAccount? GetByProviderUserId(string providerUserId);
     
     IEnumerable<ConnectedAccount> GetAll();
+    
+    IEnumerable<ConnectedAccount> GetDueForFetch(DateTime lastFetchedCutoff);
 
     Task AddAsync(ConnectedAccount connectedAccount);
 
@@ -38,6 +40,11 @@ public class ConnectedAccountRepository : IConnectedAccountRepository
 
     public IEnumerable<ConnectedAccount> GetAll() =>
         _db.ConnectedAccounts.ToList();
+
+    public IEnumerable<ConnectedAccount> GetDueForFetch(DateTime lastFetchedCutoff) =>
+        _db.ConnectedAccounts
+            .Where(c => c.LastFetchedAtUtc == null || c.LastFetchedAtUtc > lastFetchedCutoff )
+            .ToList();
 
     public async Task AddAsync(ConnectedAccount connectedAccount) =>
         await _db.ConnectedAccounts.AddAsync(connectedAccount);

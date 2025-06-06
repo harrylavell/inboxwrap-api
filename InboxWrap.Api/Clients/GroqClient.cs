@@ -9,7 +9,7 @@ namespace InboxWrap.Clients;
 
 public interface IGroqClient
 {
-    Task<GroqResponse?> GenerateEmailSummary(User user, string subject, string content);
+    Task<GroqResponse?> GenerateEmailSummary(string subject, string content);
 }
 
 public class GroqClient : IGroqClient
@@ -95,7 +95,7 @@ All keys and string values must be properly quoted. All decimal values must be b
         _logger = logger;
     }
 
-    public async Task<GroqResponse?> GenerateEmailSummary(User user, string subject, string content)
+    public async Task<GroqResponse?> GenerateEmailSummary(string subject, string content)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(subject, nameof(subject));
         ArgumentException.ThrowIfNullOrWhiteSpace(content, nameof(content));
@@ -113,7 +113,6 @@ All keys and string values must be properly quoted. All decimal values must be b
         // Prepare request content
         GroqRequest request = new()
         {
-            User = user.Id.ToString(),
             Model = MODEL,
             Messages = [ 
                 new GroqMessage()

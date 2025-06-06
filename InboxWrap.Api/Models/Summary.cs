@@ -82,6 +82,8 @@ public class SummaryGenerationMetadata
     
     public int OutputTokens { get; set; }
     
+    public int TotalTokens { get; set; }
+    
     public double TimeTaken { get; set; }
 }
 

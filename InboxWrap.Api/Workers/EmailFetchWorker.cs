@@ -2,12 +2,13 @@ using InboxWrap.Services;
 
 namespace InboxWrap.Workers;
 
-public class EmailPollingWorker : BackgroundService
+// TODO: Fill this class out (constant)
+public class EmailFetchWorker : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<EmailPollingWorker> _logger;
+    private readonly ILogger<EmailFetchWorker> _logger;
 
-    public EmailPollingWorker(IServiceProvider serviceProvider, ILogger<EmailPollingWorker> logger)
+    public EmailFetchWorker(IServiceProvider serviceProvider, ILogger<EmailFetchWorker> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -15,21 +16,20 @@ public class EmailPollingWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("EmailPollingWorker is starting.");
+        _logger.LogInformation("EmailFetchWorker is starting.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
             using var scope = _serviceProvider.CreateScope();
-            var pollingService = scope.ServiceProvider.GetRequiredService<IEmailPollingService>();
+            var fetchService = scope.ServiceProvider.GetRequiredService<IEmailFetchService>();
 
             try
             {
-                _logger.LogInformation("Running email polling task...");
                 //await pollingService.PollUsersForNewEmailsAsync(stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while polling emails.");
+                _logger.LogError(ex, "Error occurred while fetching emails.");
             }
 
             try
@@ -43,6 +43,6 @@ public class EmailPollingWorker : BackgroundService
             }
         }
 
-        _logger.LogInformation("EmailPollingWorker is stopping.");
+        _logger.LogInformation("EmailFetchWorker is stopping.");
     }
 }

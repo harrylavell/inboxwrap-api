@@ -42,6 +42,8 @@ public class ConnectedAccount : BaseEntity
     public DateTime AccessTokenExpiryUtc { get; set; }
 
     public bool IsRevoked { get; set; } = false;
+    
+    public DateTime? LastFetchedAtUtc { get; set; }
 
     public List<Summary> Summaries { get; set; } = [];
 

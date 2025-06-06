@@ -4,6 +4,7 @@ using System.Threading.RateLimiting;
 using InboxWrap.Clients;
 using InboxWrap.Configuration;
 using InboxWrap.Infrastructure.Queues;
+using InboxWrap.Infrastructure.RateLimiters;
 using InboxWrap.Repositories;
 using InboxWrap.Services;
 using InboxWrap.Workers;
@@ -113,6 +114,14 @@ builder.Services.AddRateLimiter(options =>
     };
 });
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
+builder.Services.AddControllers();
+
+// Rate Limiters
+builder.Services.AddSingleton<IRateLimiter>(new GroqRateLimiter(30, 6000));
+
 // Clients
 builder.Services.AddHttpClient<ISecretsManagerClient, SecretsManagerClient>();
 builder.Services.AddHttpClient<IMicrosoftAzureClient, MicrosoftAzureClient>();
@@ -137,12 +146,7 @@ builder.Services.AddScoped<ISummaryGenerationService, SummaryGenerationService>(
 builder.Services.AddScoped<ISummaryEmailDispatcher, SummaryEmailDispatcher>();
 
 // Workers
-
-// Other
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddMemoryCache();
-builder.Services.AddControllers();
+builder.Services.AddHostedService<SummaryGenerationWorker>();
 
 var app = builder.Build();
 

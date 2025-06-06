@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using InboxWrap.Models;
+using InboxWrap.Infrastructure.RateLimiters;
 using InboxWrap.Models.Requests;
 using InboxWrap.Models.Responses;
 
@@ -9,13 +9,14 @@ namespace InboxWrap.Clients;
 
 public interface IGroqClient
 {
-    Task<GroqResponse?> GenerateEmailSummary(string subject, string content);
+    Task<GroqResponse?> GenerateEmailSummary(string subject, string content, CancellationToken ct);
 }
 
 public class GroqClient : IGroqClient
 {
     private readonly HttpClient _httpClient;
     private readonly ISecretsManagerClient _secretsManager;
+    private readonly IRateLimiter _rateLimiter;
     private readonly ILogger<GroqClient> _logger;
 
     private const string MODEL = "llama-3.1-8b-instant";
@@ -88,14 +89,16 @@ All keys and string values must be properly quoted. All decimal values must be b
     // Casual
     //private const string TONE_PROMPT = "Use a friendly, conversational tone that feels relaxed but still clear and respectful. Avoid corporate jargon and overly formal phrasing, but don’t veer into sarcasm or silliness. Write like a smart friend explaining something simply.";
 
-    public GroqClient(HttpClient httpClient, ISecretsManagerClient secretsManager, ILogger<GroqClient> logger)
+    public GroqClient(HttpClient httpClient, ISecretsManagerClient secretsManager, IRateLimiter rateLimiter,
+            ILogger<GroqClient> logger)
     {
         _httpClient = httpClient;
         _secretsManager = secretsManager;
+        _rateLimiter = rateLimiter;
         _logger = logger;
     }
 
-    public async Task<GroqResponse?> GenerateEmailSummary(string subject, string content)
+    public async Task<GroqResponse?> GenerateEmailSummary(string subject, string content, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(subject, nameof(subject));
         ArgumentException.ThrowIfNullOrWhiteSpace(content, nameof(content));
@@ -142,6 +145,10 @@ All keys and string values must be properly quoted. All decimal values must be b
         string jsonRequest = JsonSerializer.Serialize(request);
         StringContent jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
+        int estimatedTokenCount = EstimateTokens(request);
+        Console.WriteLine(estimatedTokenCount);
+        await _rateLimiter.WaitForAvailabilityAsync(estimatedTokenCount, ct);
+
         HttpResponseMessage response = await _httpClient.PostAsync(CHAT_URI, jsonContent);
         string json = await response.Content.ReadAsStringAsync();
 
@@ -167,5 +174,17 @@ All keys and string values must be properly quoted. All decimal values must be b
             _logger.LogError(ex, "Failed to deserialize Groq response.");
             return null;
         }
+    }
+
+    private int EstimateTokens(GroqRequest request)
+    {
+        int estimatedTokenCount = 0;
+
+        foreach (GroqMessage message in request.Messages)
+        {
+            estimatedTokenCount += message.Content.Length;
+        }
+
+        return estimatedTokenCount / 4 + 100;
     }
 }

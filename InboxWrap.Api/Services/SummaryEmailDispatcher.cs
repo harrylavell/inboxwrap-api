@@ -10,8 +10,6 @@ namespace InboxWrap.Services;
 public interface ISummaryEmailDispatcher
 {
     Task DispatchEmailSummary(CancellationToken ct);
-
-    //Task RunAsync(CancellationToken ct);
 }
 
 public class SummaryEmailDispatcher : ISummaryEmailDispatcher

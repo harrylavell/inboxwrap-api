@@ -14,8 +14,6 @@ public interface ISummaryGenerationService
     Task SummarizeNextEmailAsync(CancellationToken ct);
 
     Task SummarizeEmailAsync(SummarizeEmailJob job, CancellationToken ct);
-
-    //Task RunAsync(CancellationToken ct);
 }
 
 public class SummaryGenerationService : ISummaryGenerationService
@@ -26,8 +24,8 @@ public class SummaryGenerationService : ISummaryGenerationService
     private readonly ISummaryQueue _queue;
     private readonly ILogger<EmailFetchService> _logger;
 
-    public SummaryGenerationService(IConnectedAccountRepository connected, IGroqClient client, ISummaryQueue queue,
-            ISummaryRepository summaries, ILogger<EmailFetchService> logger)
+    public SummaryGenerationService(IConnectedAccountRepository connected, ISummaryRepository summaries,
+            IGroqClient client, ISummaryQueue queue, ILogger<EmailFetchService> logger)
     {
         _connected = connected;
         _summaries = summaries;
@@ -41,8 +39,8 @@ public class SummaryGenerationService : ISummaryGenerationService
         ct.ThrowIfCancellationRequested();
 
         SummarizeEmailJob job = await _queue.DequeueAsync(ct);
-        Console.WriteLine(job.ToString());
 
+        _logger.LogInformation($"Summarizing email {job.EmailId} for user {job.UserId}");
         await SummarizeEmailAsync(job, ct);
     }
 
@@ -50,7 +48,7 @@ public class SummaryGenerationService : ISummaryGenerationService
     {
         ct.ThrowIfCancellationRequested();
         
-        GroqResponse? response = await _client.GenerateEmailSummary(job.Subject, job.Body);
+        GroqResponse? response = await _client.GenerateEmailSummary(job.Subject, job.Body, ct);
 
         if (response == null)
         {
@@ -113,14 +111,4 @@ public class SummaryGenerationService : ISummaryGenerationService
         await _summaries.AddAsync(summary);
         await _summaries.SaveChangesAsync();
     }
-
-    /*
-    public async Task RunAsync(CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
-        {
-
-        }
-    }
-    */
 }

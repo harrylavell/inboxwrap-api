@@ -15,8 +15,6 @@ namespace InboxWrap.Services;
 public interface IEmailFetchService
 {
     Task FetchEmailsAsync(CancellationToken ct);
-
-    //Task RunAsync(CancellationToken ct);
 }
 
 public class EmailFetchService : IEmailFetchService

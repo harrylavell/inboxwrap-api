@@ -40,7 +40,6 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 
     try
     {
-        Console.WriteLine($"Connection string resolved: {connectionString}");
         options.UseNpgsql(connectionString);
     }
     catch (Exception ex)
@@ -143,10 +142,12 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 
 builder.Services.AddScoped<IEmailFetchService, EmailFetchService>();
 builder.Services.AddScoped<ISummaryGenerationService, SummaryGenerationService>();
-builder.Services.AddScoped<ISummaryEmailDispatcher, SummaryEmailDispatcher>();
+builder.Services.AddScoped<ISummaryEmailDispatchService, SummaryEmailDispatchService>();
 
 // Workers
+builder.Services.AddHostedService<EmailFetchWorker>();
 builder.Services.AddHostedService<SummaryGenerationWorker>();
+builder.Services.AddHostedService<SummaryEmailDispatcher>();
 
 var app = builder.Build();
 

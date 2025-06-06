@@ -33,7 +33,7 @@ public class SummaryGenerationWorker : BackgroundService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to summarize email.");
+                    //_logger.LogError(ex, "Failed to summarize email.");
                 }
                 finally
                 {

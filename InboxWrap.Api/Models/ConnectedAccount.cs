@@ -37,6 +37,8 @@ public class ConnectedAccount : BaseEntity
 
     public bool IsRevoked { get; set; } = false;
     
+    public DateTime? FetchLockUntilUtc { get; set; }
+    
     public DateTime? LastFetchedAtUtc { get; set; }
 
     public List<Summary> Summaries { get; set; } = [];

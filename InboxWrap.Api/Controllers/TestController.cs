@@ -10,11 +10,11 @@ public class TestController : ControllerBase
 {
     private readonly IEmailFetchService _fetchService;
     private readonly ISummaryGenerationService _generationService;
-    private readonly ISummaryEmailDispatcher _dispatchService;
+    private readonly ISummaryEmailDispatchService _dispatchService;
     private readonly ILogger<TestController> _logger;
 
     public TestController(IEmailFetchService fetchService, ISummaryGenerationService generationService,
-            ISummaryEmailDispatcher dispatchService, ISecretsManagerClient client, ILogger<TestController> logger)
+            ISummaryEmailDispatchService dispatchService, ISecretsManagerClient client, ILogger<TestController> logger)
     {
         _fetchService = fetchService;
         _generationService = generationService;

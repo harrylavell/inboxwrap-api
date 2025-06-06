@@ -7,12 +7,12 @@ using InboxWrap.Repositories;
 
 namespace InboxWrap.Services;
 
-public interface ISummaryEmailDispatcher
+public interface ISummaryEmailDispatchService
 {
     Task DispatchEmailSummary(CancellationToken ct);
 }
 
-public class SummaryEmailDispatcher : ISummaryEmailDispatcher
+public class SummaryEmailDispatchService : ISummaryEmailDispatchService
 {
     private readonly IUserRepository _users;
     private readonly IConnectedAccountRepository _connected;
@@ -20,7 +20,7 @@ public class SummaryEmailDispatcher : ISummaryEmailDispatcher
     private readonly IPostmarkClient _client;
     private readonly ILogger<EmailFetchService> _logger;
 
-    public SummaryEmailDispatcher(IUserRepository users, IConnectedAccountRepository connected, IPostmarkClient client,
+    public SummaryEmailDispatchService(IUserRepository users, IConnectedAccountRepository connected, IPostmarkClient client,
             ISummaryRepository summaries, ILogger<EmailFetchService> logger)
     {
         _users = users;
@@ -35,8 +35,8 @@ public class SummaryEmailDispatcher : ISummaryEmailDispatcher
         ct.ThrowIfCancellationRequested();
 
         // Retrieve all users due for a summary
-        //IEnumerable<User> users = _users.GetDueForSummary(DateTime.UtcNow);
-        IEnumerable<User> users = _users.GetAll();
+        IEnumerable<User> users = _users.GetDueForSummary(DateTime.UtcNow);
+        //IEnumerable<User> users = _users.GetAll();
 
         foreach (User user in users)
         {
@@ -47,7 +47,6 @@ public class SummaryEmailDispatcher : ISummaryEmailDispatcher
                 List<SummaryContent> summaries = account.Summaries.Select(s => s.Content).ToList();
 
                 summaries = summaries.OrderByDescending(s => s.PriorityScore).ToList();
-                Console.WriteLine(summaries.Count());
 
                 List<SummaryContent> topPicks = summaries.Take(3).ToList();
                 List<SummaryContent> otherSummaries = summaries.Skip(3).ToList();
@@ -72,7 +71,7 @@ public class SummaryEmailDispatcher : ISummaryEmailDispatcher
                 if (response == null)
                 {
                     // TODO: Handle this better
-                    return;
+                    continue;
                 }
 
                 foreach (Summary summary in user.Summaries)
@@ -89,7 +88,7 @@ public class SummaryEmailDispatcher : ISummaryEmailDispatcher
                             ? response.Message
                             : string.Empty,
                         SentAtUtc = response.SubmittedAt,
-                        AttemptCount = summary.DeliveryMetadata.AttemptCount += 1,
+                        AttemptCount = summary.DeliveryMetadata.AttemptCount + 1,
                     };
                     
                     // Summary was successfully delivered
@@ -114,12 +113,9 @@ public class SummaryEmailDispatcher : ISummaryEmailDispatcher
     }
 
     /*
-    public async Task RunAsync(CancellationToken ct)
+    private DailySummaryTemplateModel BuildTemplateModel()
     {
-        while (!ct.IsCancellationRequested)
-        {
 
-        }
     }
     */
 }

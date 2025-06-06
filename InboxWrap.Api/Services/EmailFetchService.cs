@@ -36,8 +36,8 @@ public class EmailFetchService : IEmailFetchService
     public async Task FetchEmailsAsync(CancellationToken ct)
     {
         DateTime fetchStartUtc = DateTime.UtcNow;
-        //DateTime lastFetchedCutoffUtc = fetchStartUtc.AddMinutes(-5);
-        DateTime lastFetchedCutoffUtc = fetchStartUtc.AddDays(-5);
+        DateTime lastFetchedCutoffUtc = fetchStartUtc.AddMinutes(-5);
+        //DateTime lastFetchedCutoffUtc = fetchStartUtc.AddDays(-5);
         IEnumerable<ConnectedAccount> dueForFetch = _connected.GetDueForFetch(lastFetchedCutoffUtc);
 
         if (!dueForFetch.Any())
@@ -50,6 +50,7 @@ public class EmailFetchService : IEmailFetchService
         foreach (ConnectedAccount account in dueForFetch)
         {
             ct.ThrowIfCancellationRequested();
+            await UpdateFetchLockUntilAsync(account);
 
             string? accessToken = (account.AccessTokenExpiryUtc <= DateTime.UtcNow)
                 ? accessToken = await UpdateAccessToken(account)
@@ -160,6 +161,18 @@ public class EmailFetchService : IEmailFetchService
         }
 
         return null;
+    }
+
+    private async Task UpdateFetchLockUntilAsync(ConnectedAccount account)
+    {
+        // Set a 5 minute lock on the connected account to prevent race conditions/overlapping
+        account.FetchLockUntilUtc = DateTime.UtcNow.AddMinutes(5);
+        _connected.Update(account);
+
+        if (!await _connected.SaveChangesAsync())
+        {
+            _logger.LogError($"Failed to update FetchLockUntilUtc for connected account: {account.Id}");
+        }
     }
 
     private async Task UpdateLastFetchedAtAsync(ConnectedAccount account)

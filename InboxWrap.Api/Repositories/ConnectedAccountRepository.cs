@@ -43,7 +43,10 @@ public class ConnectedAccountRepository : IConnectedAccountRepository
 
     public IEnumerable<ConnectedAccount> GetDueForFetch(DateTime lastFetchedCutoff) =>
         _db.ConnectedAccounts
-            .Where(c => c.LastFetchedAtUtc == null || c.LastFetchedAtUtc > lastFetchedCutoff )
+            .Where(c => 
+                (c.FetchLockUntilUtc == null || c.FetchLockUntilUtc < DateTime.UtcNow) &&
+                (c.LastFetchedAtUtc == null || c.LastFetchedAtUtc < lastFetchedCutoff)
+            )
             .ToList();
 
     public async Task AddAsync(ConnectedAccount connectedAccount) =>

@@ -40,6 +40,9 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<ConnectedAccount>()
             .HasIndex(c => c.UserId);
+        
+        modelBuilder.Entity<ConnectedAccount>()
+            .HasIndex(c => c.FetchLockUntilUtc);
 
         modelBuilder.Entity<ConnectedAccount>()
             .HasIndex(c => c.LastFetchedAtUtc);

@@ -1,5 +1,6 @@
 using InboxWrap.Clients;
 using InboxWrap.Constants;
+using InboxWrap.Helpers;
 using InboxWrap.Models;
 using InboxWrap.Models.Requests;
 using InboxWrap.Models.Responses;
@@ -44,9 +45,13 @@ public class SummaryEmailDispatchService : ISummaryEmailDispatchService
 
             foreach (ConnectedAccount account in user.ConnectedAccounts)
             {
-                List<SummaryContent> summaries = account.Summaries.Select(s => s.Content).ToList();
-
-                summaries = summaries.OrderByDescending(s => s.PriorityScore).ToList();
+                // Retrieve all summaries that are ready for delivery for this
+                // connected account.
+                List<SummaryContent> summaries = account.Summaries
+                    .Where(s => s.DeliveryStatus == DeliveryStatuses.Pending)
+                    .Select(s => s.Content)
+                    .OrderByDescending(s => s.PriorityScore)
+                    .ToList();
 
                 List<SummaryContent> topPicks = summaries.Take(3).ToList();
                 List<SummaryContent> otherSummaries = summaries.Skip(3).ToList();
@@ -109,6 +114,11 @@ public class SummaryEmailDispatchService : ISummaryEmailDispatchService
 
                 await _summaries.SaveChangesAsync();
             }
+
+            // Ensure the next delivery time is kept up to date
+            user.NextDeliveryUtc = DeliveryTimeCalculator.CalculateNextDeliveryUtc(user.Preferences);
+            _users.Update(user);
+            await _users.SaveChangesAsync();
         }
     }
 

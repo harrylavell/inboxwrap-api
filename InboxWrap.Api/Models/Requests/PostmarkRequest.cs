@@ -21,11 +21,21 @@ public class DailySummaryTemplateModel : PostmarkTemplateModel
     
     public string IntroText { get; set; } = string.Empty;
     
-    public List<SummaryContent> TopPicks { get; set; } = [];
+    public int EmailCount { get; set; } = 0;
     
-    public List<SummaryContent> ImportantSummaries { get; set; } = [];
-    
-    public List<SummaryContent> OtherSummaries { get; set; } = [];
+    public List<SummaryItem>? FinanceAndBills { get; set; } = [];
+
+    public List<SummaryItem>? EventsAndReminders { get; set; } = [];
+
+    public List<SummaryItem>? SecurityAndAccount { get; set; } = [];
+
+    public List<SummaryItem>? PersonalAndSocial { get; set; } = [];
+
+    public List<SummaryItem>? PromotionsAndNewsletters { get; set; } = [];
+
+    public int PromptionsAndNewslettersRemainder { get; set; } = 0;
+
+    public List<SummaryItem>? EntertainmentAndGaming { get; set; } = [];
 
     public string PreferencesUrl { get; set; } = string.Empty;
     

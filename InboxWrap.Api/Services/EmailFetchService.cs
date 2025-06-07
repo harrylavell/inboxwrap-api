@@ -37,7 +37,7 @@ public class EmailFetchService : IEmailFetchService
     {
         DateTime fetchStartUtc = DateTime.UtcNow;
         DateTime lastFetchedCutoffUtc = fetchStartUtc.AddMinutes(-5);
-        //DateTime lastFetchedCutoffUtc = fetchStartUtc.AddDays(-5);
+        //DateTime lastFetchedCutoffUtc = fetchStartUtc.AddDays(-1);
         IEnumerable<ConnectedAccount> dueForFetch = _connected.GetDueForFetch(lastFetchedCutoffUtc);
 
         if (!dueForFetch.Any())
@@ -115,7 +115,7 @@ public class EmailFetchService : IEmailFetchService
 
                 try
                 {
-                    Console.WriteLine(job.ToString());
+                    _logger.LogDebug(job.ToString());
                     await _summaryQueue.EnqueueAsync(job);
                 }
                 catch (Exception ex)

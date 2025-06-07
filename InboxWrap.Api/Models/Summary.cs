@@ -104,3 +104,32 @@ public class SummaryDeliveryMetadata
 
     public int AttemptCount { get; set; } = 0;
 }
+
+public class SummaryItem
+{
+    public string Title { get; set; } = string.Empty;
+    
+    public string Content { get; set; } = string.Empty;
+    
+    public string? Action { get; set; } = string.Empty;
+
+    public string Link { get; set; } = string.Empty;
+    
+    public string Category { get; set; } = string.Empty;
+    
+    public bool Important { get; set; } = false;
+
+    public SummaryItem() { }
+
+    public SummaryItem(Summary summary)
+    {
+        Title = summary.Content.Title;
+        Content = summary.Content.Content;
+        Action = !summary.Content.ActionRequired.Contains("None")
+            ? summary.Content.ActionRequired
+            : null;
+        Link = summary.Metadata.Link;
+        Category = summary.Content.Category;
+        Important = summary.Content.IsImportant;
+    }
+}

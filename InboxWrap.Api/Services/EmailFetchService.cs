@@ -1,7 +1,4 @@
 using System.Globalization;
-using System.Net;
-using System.Text.RegularExpressions;
-using HtmlAgilityPack;
 using InboxWrap.Clients;
 using InboxWrap.Constants;
 using InboxWrap.Infrastructure.Queues;
@@ -56,7 +53,7 @@ public class EmailFetchService : IEmailFetchService
             await UpdateFetchLockUntilAsync(account);
 
             string? accessToken = (account.AccessTokenExpiryUtc <= DateTime.UtcNow)
-                ? accessToken = await UpdateAccessToken(account)
+                ? await UpdateAccessToken(account)
                 : account.AccessToken; // TODO: Encrypt/decrypt
 
             if (string.IsNullOrWhiteSpace(accessToken))
@@ -69,25 +66,30 @@ public class EmailFetchService : IEmailFetchService
 
             if (account.Provider == Providers.Microsoft)
             {
-                // Calculate the date time IOS 8601 format as required by Graph API
+                // Calculate the date time IOS 8601 format as required by Graph API.
                 string receivedDateTime = lastFetchedCutoffUtc
                     .ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
 
-                MicrosoftMailResponse? response = await _client.GetUnreadMail(accessToken, receivedDateTime);
+                Result<MicrosoftMailResponse> result = await _client.GetUnreadMail(accessToken, receivedDateTime);
 
-                if (response == null)
+                if (result.Failure || result.Value == null)
                 {
-                    _logger.LogError("Unable to retrieve unread mail for connected account.");
+                    _logger.LogError("Unread mail retrieval failed: {Error}", result.Error);
                     continue;
                 }
 
                 // Map each Microsoft message to a generic Mail object
-                response.Messages.ForEach(message => emails.Add(new Mail(message)));
+                result.Value.Messages.ForEach(message => emails.Add(new Mail(message)));
             }
-
-            if (account.Provider == Providers.Google)
+            else if (account.Provider == Providers.Google)
             {
-
+                _logger.LogWarning("Google provider not yet implemented for account: {AccountId}", account.Id);
+                await Task.CompletedTask;
+            }
+            else
+            {
+                _logger.LogWarning("Unknown provider '{Provider}' for account: {AccountId}", account.Provider, account.Id);
+                await Task.CompletedTask;
             }
 
             // Update each email via an updater
@@ -96,8 +98,7 @@ public class EmailFetchService : IEmailFetchService
                 emails = updater.Update(emails);
             }
 
-            // Iterate through each email and parse it through the updaters
-            // before pushing it to the summary generation queue
+            // Iterate through each email and push to summary generation queue.
             foreach (Mail email in emails)
             {
                 SummarizeEmailJob job = new()
@@ -112,12 +113,22 @@ public class EmailFetchService : IEmailFetchService
                     Source = email.Source
                 };
 
-                Console.WriteLine(job.ToString());
-                await _summaryQueue.EnqueueAsync(job);
+                try
+                {
+                    Console.WriteLine(job.ToString());
+                    await _summaryQueue.EnqueueAsync(job);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to enqueue summarization job for account {AccountId}, email {EmailId}",
+                            account.Id, email.Id);
+                }
             }
 
             await UpdateLastFetchedAtAsync(account);
+            _logger.LogInformation("Fetched and queued {Count} emails for account {AccountId}", emails.Count, account.Id);
         }
+
     }
 
     private async Task<string?> UpdateAccessToken(ConnectedAccount account)
@@ -126,16 +137,25 @@ public class EmailFetchService : IEmailFetchService
 
         if (account.Provider == Providers.Microsoft) // TODO: Fix casing
         {
-            MicrosoftTokenResponse? tokenData = await _client.RefreshToken(refreshToken);
-            if (string.IsNullOrWhiteSpace(tokenData?.AccessToken) || string.IsNullOrWhiteSpace(tokenData?.RefreshToken))
+            Result<MicrosoftTokenResponse> result = await _client.RefreshToken(refreshToken);
+
+            if (result.Failure || result.Value == null)
             {
-                _logger.LogError(""); // TODO: Add good error message
+                _logger.LogError("Token refresh failed: {Error}", result.Error);
                 return null;
             }
 
-            account.AccessToken = tokenData.AccessToken; // TODO: Encrypt/decrypt
-            account.RefreshToken = tokenData.RefreshToken; // TODO: Encrypt/decrypt
-            account.AccessTokenExpiryUtc = DateTime.UtcNow.AddSeconds(tokenData.ExpiresIn);
+            MicrosoftTokenResponse token = result.Value;
+
+            if (string.IsNullOrWhiteSpace(token.AccessToken) || string.IsNullOrWhiteSpace(token.RefreshToken))
+            {
+                _logger.LogError("Access token or refresh token not retrieved.");
+                return null;
+            }
+
+            account.AccessToken = token.AccessToken; // TODO: Encrypt/decrypt
+            account.RefreshToken = token.RefreshToken; // TODO: Encrypt/decrypt
+            account.AccessTokenExpiryUtc = DateTime.UtcNow.AddSeconds(token.ExpiresIn);
 
             _connected.Update(account);
 
@@ -147,12 +167,17 @@ public class EmailFetchService : IEmailFetchService
             }
 
             // Update with new access token
-            return tokenData.AccessToken;
+            return token.AccessToken;
         }
-
-        if (account.Provider == Providers.Google)
+        else if (account.Provider == Providers.Google)
         {
-
+            _logger.LogWarning("Google refresh token handling not yet implemented for account: {AccountId}",
+                    account.Id);
+        }
+        else
+        {
+            _logger.LogWarning("Unknown provider '{Provider}' refresh token handling for account: {AccountId}",
+                    account.Provider, account.Id);
         }
 
         return null;

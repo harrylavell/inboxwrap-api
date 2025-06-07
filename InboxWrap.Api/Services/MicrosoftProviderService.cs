@@ -72,15 +72,16 @@ public class MicrosoftProviderService : IMicrosoftProviderService
             return Result.Fail("Invalid state information.");
         }
 
-        MicrosoftTokenResponse? tokenData = await _azureClient.GetToken(code);
+        Result<MicrosoftTokenResponse> result = await _azureClient.GetToken(code);
 
-        // Retrieve the authorization token from Microsoft
-        if (tokenData?.IdToken == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
-                || string.IsNullOrWhiteSpace(tokenData.RefreshToken))
+        if (result.Failure || result.Value == null || result.Value.IdToken == null ||
+            string.IsNullOrWhiteSpace(result.Value.AccessToken) || string.IsNullOrWhiteSpace(result.Value.RefreshToken))
         {
             _logger.LogError("Failed to retrieve authorization token.");
             return Result.Fail("Unable to connect to your Microsoft account at this time.");
         }
+
+        MicrosoftTokenResponse tokenData = result.Value;
 
         // Extract id_token info
         IdTokenInfo idTokenInfo;

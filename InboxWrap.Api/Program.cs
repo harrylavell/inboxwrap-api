@@ -7,6 +7,7 @@ using InboxWrap.Infrastructure.Queues;
 using InboxWrap.Infrastructure.RateLimiters;
 using InboxWrap.Repositories;
 using InboxWrap.Services;
+using InboxWrap.Updaters;
 using InboxWrap.Workers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -143,6 +144,11 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IEmailFetchService, EmailFetchService>();
 builder.Services.AddScoped<ISummaryGenerationService, SummaryGenerationService>();
 builder.Services.AddScoped<ISummaryEmailDispatchService, SummaryEmailDispatchService>();
+
+// Updaters
+builder.Services.AddScoped<IMailUpdater, StripHtmlUpdater>();
+builder.Services.AddScoped<IMailUpdater, TrimWhitespaceUpdater>();
+builder.Services.AddScoped<IMailUpdater, LimitLengthUpdater>();
 
 // Workers
 builder.Services.AddHostedService<EmailFetchWorker>();

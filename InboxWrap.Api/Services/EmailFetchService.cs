@@ -9,6 +9,7 @@ using InboxWrap.Models;
 using InboxWrap.Models.Jobs;
 using InboxWrap.Models.Responses;
 using InboxWrap.Repositories;
+using InboxWrap.Updaters;
 
 namespace InboxWrap.Services;
 
@@ -22,14 +23,16 @@ public class EmailFetchService : IEmailFetchService
     private readonly IConnectedAccountRepository _connected;
     private readonly IMicrosoftAzureClient _client;
     private readonly ISummaryQueue _summaryQueue;
+    private readonly IEnumerable<IMailUpdater> _updaters;
     private readonly ILogger<EmailFetchService> _logger;
 
     public EmailFetchService(IConnectedAccountRepository connected, IMicrosoftAzureClient client,
-            ISummaryQueue summaryQueue, ILogger<EmailFetchService> logger)
+            ISummaryQueue summaryQueue, IEnumerable<IMailUpdater> updaters, ILogger<EmailFetchService> logger)
     {
         _connected = connected;
         _client = client;
         _summaryQueue = summaryQueue;
+        _updaters = updaters;
         _logger = logger;
     }
 
@@ -62,7 +65,7 @@ public class EmailFetchService : IEmailFetchService
                 continue;
             }
 
-            List<Mail> mail = [];
+            List<Mail> emails = [];
 
             if (account.Provider == Providers.Microsoft)
             {
@@ -79,7 +82,7 @@ public class EmailFetchService : IEmailFetchService
                 }
 
                 // Map each Microsoft message to a generic Mail object
-                response.Messages.ForEach(message => mail.Add(new Mail(message)));
+                response.Messages.ForEach(message => emails.Add(new Mail(message)));
             }
 
             if (account.Provider == Providers.Google)
@@ -87,24 +90,16 @@ public class EmailFetchService : IEmailFetchService
 
             }
 
+            // Update each email via an updater
+            foreach (IMailUpdater updater in _updaters)
+            {
+                emails = updater.Update(emails);
+            }
+
             // Iterate through each email and parse it through the updaters
             // before pushing it to the summary generation queue
-            foreach (Mail email in mail)
+            foreach (Mail email in emails)
             {
-                // TODO: (UPDATER) Remove HTML
-                HtmlDocument doc = new();
-                doc.LoadHtml(email.Body);
-                email.Body = WebUtility.HtmlDecode(doc.DocumentNode.InnerText);
-                
-                // TODO: (UPDATER) Remove WhiteSpace and New Lines
-                email.Body = Regex.Replace(email.Body, @"\s{2,}", " ");
-                
-                // TODO: (UPDATER) Truncate to 1000 characters
-                if (email.Body.Length > 1000)
-                {
-                    email.Body = email.Body.Substring(0, 1000);
-                }
-
                 SummarizeEmailJob job = new()
                 {
                     Id = Guid.NewGuid(),

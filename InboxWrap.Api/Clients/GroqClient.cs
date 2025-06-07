@@ -36,7 +36,7 @@ You must return a complete, valid JSON object, exactly in this structure:
   "title": "Title for the summary.",
   "content": "Very short summary, 1–2 sentences max.",
   "action_required": "Details any action required.",
-  "category": "One of: 'Finance & Bills', 'Events & Reminders', 'Security & Account', 'Personal & Social', 'Promotions & Newsletters'",
+  "category": "One of: 'Finance & Bills', 'Events & Reminders', 'Security & Account', 'Personal & Social', 'Promotions & Newsletters', 'Entertainment & Gaming'",
   "important": true|false
   "confidence_score": 0.00 (decimal value)
   "priority_score": 0.95 (decimal value)
@@ -146,7 +146,6 @@ All keys and string values must be properly quoted. All decimal values must be b
         StringContent jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
         int estimatedTokenCount = EstimateTokens(request);
-        Console.WriteLine(estimatedTokenCount);
         await _rateLimiter.WaitForAvailabilityAsync(estimatedTokenCount, ct);
 
         HttpResponseMessage response = await _httpClient.PostAsync(CHAT_URI, jsonContent);
